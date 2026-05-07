@@ -1,0 +1,3236 @@
+<!DOCTYPE html>
+<html lang="ko" style="background:#0c0c0c; background-color:#0c0c0c;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0c0c0c">
+<meta name="color-scheme" content="dark">
+<title>PERSUS 견적서 시스템</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+:root { color-scheme: dark; }
+
+html, body {
+    background: #0c0c0c !important;
+    background-color: #0c0c0c !important;
+}
+
+html {
+    background: #0c0c0c;
+    background-color: #0c0c0c;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+*:focus { outline: none; }
+input:focus, select:focus, textarea:focus { outline: none !important; box-shadow: none; }
+
+body {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 18px;
+    background: #0c0c0c;
+    background-color: #0c0c0c;
+    color: #e8e8e8;
+    min-height: 100vh;
+    padding: 2rem;
+    line-height: 1.5;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* 2026 트렌드: 미세한 그레인 텍스처 (프리미엄 디자인 스튜디오 분위기) */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.13 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 1;
+    mix-blend-mode: overlay;
+}
+
+/* 2026 트렌드: 앰비언트 그라디언트 오브 (마우스 따라가는 미세한 광원) */
+body::after {
+    content: '';
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,107,157,0.08) 0%, rgba(255,107,157,0) 60%);
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translate(var(--mx, 30vw), var(--my, 20vh)) translate(-50%, -50%);
+}
+
+.app {
+    max-width: 1700px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+}
+
+.app-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+    animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.app-title {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 2rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.3rem;
+    background: linear-gradient(135deg, #ffffff 0%, #ffffff 60%, #FE647E 130%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+.app-subtitle {
+    font-size: 0.85rem;
+    color: #888;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.app-subtitle::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #FE647E;
+    box-shadow: 0 0 12px rgba(255,107,157,0.7);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 460px 1fr;
+    gap: 2rem;
+}
+
+/* ============= 입력 패널 ============= */
+.form-panel {
+    background: rgba(20, 20, 20, 0.7);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 1.5rem;
+    height: fit-content;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    position: sticky;
+    top: 2rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+    animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+.form-panel::-webkit-scrollbar { width: 6px; }
+.form-panel::-webkit-scrollbar-track { background: transparent; }
+.form-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+.section {
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 1.2rem 0;
+}
+.section:first-child { padding-top: 0; }
+.section:last-child { border-bottom: none; padding-bottom: 0; }
+
+.section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1rem;
+}
+
+.section-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.section-num {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 0.75rem;
+    color: #FE647E;
+    letter-spacing: 0.1em;
+    padding: 0.25rem 0.55rem;
+    border: 1px solid rgba(255,107,157,0.25);
+    border-radius: 100px;
+    background: rgba(255,107,157,0.06);
+    transition: all 0.2s;
+}
+.section:hover .section-num {
+    background: rgba(255,107,157,0.12);
+    border-color: rgba(255,107,157,0.4);
+}
+
+.section-hint {
+    font-size: 0.9rem;
+    color: #777;
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.fld {
+    margin-bottom: 0.85rem;
+}
+
+.fld label {
+    display: block;
+    font-size: 0.9rem;
+    color: #999;
+    margin-bottom: 0.35rem;
+    letter-spacing: 0.02em;
+}
+.fld label .req {
+    color: #FE647E;
+    font-size: 0.85rem;
+    margin-left: 2px;
+}
+
+.fld label.chk {
+    display: flex;
+    font-size: 0.95rem;
+    color: #e0e0e0;
+    margin-bottom: 0;
+}
+
+.fld input, .fld select, .fld textarea {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    background: #f0f0f0;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    color: #1a1a1a;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    -webkit-text-fill-color: #1a1a1a;
+    color-scheme: light;
+}
+
+.fld select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+}
+
+.fld input:focus, .fld select:focus, .fld textarea:focus {
+    outline: none;
+    border-color: #FE647E;
+    box-shadow: 0 0 0 3px rgba(255,107,157,0.12);
+    background: #f7f7f7;
+    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fld input:-webkit-autofill,
+.fld input:-webkit-autofill:hover,
+.fld input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 100px #f0f0f0 inset;
+    -webkit-text-fill-color: #1a1a1a;
+    caret-color: #1a1a1a;
+}
+
+.fld input::placeholder,
+.fld textarea::placeholder,
+.si-name::placeholder {
+    color: #aaa;
+    -webkit-text-fill-color: #aaa;
+    opacity: 1;
+}
+
+.fld textarea {
+    resize: vertical;
+    min-height: 60px;
+    -webkit-appearance: none;
+}
+
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.6rem; }
+
+.chk-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.4rem 0;
+}
+
+.chk {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.8rem;
+    background: rgba(36, 36, 36, 0.6);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #e0e0e0;
+    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    user-select: none;
+    -webkit-user-select: none;
+    width: fit-content;
+    white-space: nowrap;
+    backdrop-filter: blur(10px);
+}
+.chk:hover {
+    background: rgba(50, 50, 50, 0.8);
+    border-color: rgba(255,107,157,0.25);
+    transform: translateY(-1px);
+}
+.chk::before { display: none; content: none; }
+.chk.on::before { display: none; content: none; }
+
+.radio-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    min-width: 12px;
+    min-height: 12px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.4);
+    background: transparent;
+    background-color: transparent;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+.chk.on .radio-dot {
+    border-color: #FE647E;
+    background: #FE647E;
+    background-color: #FE647E;
+    box-shadow: inset 0 0 0 2.5px #242424;
+}
+.chk:hover { background: #2c2c2c; background-color: #2c2c2c; border-color: #444; color: #ddd; }
+.chk input { display: none; }
+.chk.on {
+    background: rgba(255, 107, 157, 0.12);
+    border-color: #FE647E;
+    color: #fff;
+    font-weight: 600;
+}
+.chk.on::before {
+    border-color: #FE647E;
+    background: #FE647E;
+    box-shadow: inset 0 0 0 2.5px #2a1520;
+    width: 12px;
+    height: 12px;
+    min-width: 12px;
+    min-height: 12px;
+    box-sizing: border-box;
+}
+
+.chk-group-label {
+    font-size: 0.82rem;
+    color: #888;
+    margin: 0.7rem 0 0.35rem;
+    letter-spacing: 0.03em;
+}
+
+.chk-wrap {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.btn-line {
+    width: 100%;
+    padding: 0.65rem;
+    background: transparent;
+    border: 1px dashed rgba(255, 107, 157, 0.4);
+    border-radius: 6px;
+    color: #FE647E;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.btn-line:hover {
+    background: rgba(255, 107, 157, 0.06);
+    border-color: rgba(255, 107, 157, 0.6);
+}
+
+.btn-x {
+    background: transparent;
+    border: 1px solid rgba(255,107,107,0.3);
+    color: #ff6b6b;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-family: 'Pretendard', sans-serif;
+}
+.btn-x:hover { background: rgba(255,107,107,0.1); }
+
+.opt-card {
+    background: #1a1a1a;
+    background-color: #1a1a1a;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 0.9rem;
+    margin-bottom: 0.6rem;
+}
+
+.opt-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.7rem;
+}
+
+.opt-num {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 0.85rem;
+    color: #FF96A6;
+    letter-spacing: 0.1em;
+}
+
+/* 토글 스위치 */
+.toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.toggle-label {
+    font-size: 1rem;
+    color: #ccc;
+}
+
+.toggle-desc {
+    font-size: 0.85rem;
+    color: #777;
+    margin-top: 0.2rem;
+}
+
+.switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    flex-shrink: 0;
+}
+.switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.switch:hover::after { box-shadow: 0 1px 6px rgba(0,0,0,0.4); }
+.switch.on {
+    background: #FE647E;
+    box-shadow: 0 0 12px rgba(255,107,157,0.4);
+}
+.switch.on::after {
+    left: 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.amount-display {
+    background: rgba(255, 107, 157, 0.06);
+    border: 1px solid rgba(255, 107, 157, 0.2);
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.4rem;
+}
+.amount-display .label { font-size: 0.75rem; color: #999; }
+.amount-display .value {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 1rem;
+    color: #FF96A6;
+    font-weight: 500;
+}
+
+/* ============= 액션 바 ============= */
+.actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1.5rem;
+}
+
+.btn-primary, .btn-ghost {
+    flex: 1;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary {
+    background: #FE647E;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(254,100,126,0.25);
+}
+.btn-primary:hover {
+    background: #F4556F;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(254,100,126,0.4);
+}
+.btn-primary:active { transform: translateY(0); }
+.btn-primary > * { position: relative; z-index: 1; }
+
+/* 버튼 클릭 시 ripple 효과 */
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+    transform: translate(-50%, -50%) scale(0);
+    top: 50%; left: 50%;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.5s, opacity 0.5s;
+}
+.btn-primary:active::after {
+    transform: translate(-50%, -50%) scale(3);
+    opacity: 0;
+    transition: 0s;
+}
+
+.btn-ghost {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #ccc;
+    backdrop-filter: blur(10px);
+}
+.btn-ghost:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+}
+
+.actions-wrap {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+.consent-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.75);
+    font-weight: 500;
+    line-height: 1.55;
+    cursor: pointer;
+    user-select: none;
+    padding: 0.6rem 0.7rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    transition: all 0.15s;
+}
+.consent-row:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.9); }
+.consent-row input[type="checkbox"] {
+    margin-top: 2px;
+    width: 14px;
+    height: 14px;
+    accent-color: #FE647E;
+    flex: none;
+    cursor: pointer;
+}
+.btn-full {
+    width: 100%;
+    padding: 0.95rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #fff;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+
+/* ============================== */
+/* 견적서 미리보기 (실제 출력물) */
+/* ============================== */
+.preview-panel {
+    background: transparent;
+    animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+
+.doc-wrap {
+    background: #fff;
+    color: #2a2a2a;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+    transform: translateZ(0);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s;
+    position: relative;
+}
+.doc-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,107,157,0.3), transparent 40%, transparent 60%, rgba(255,107,157,0.15));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s;
+}
+.doc-wrap:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 40px 100px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
+}
+.doc-wrap:hover::before { opacity: 1; }
+
+.doc {
+    padding: 60px 70px;
+    font-size: 20px;
+    line-height: 1.65;
+    color: #333;
+    font-family: 'Pretendard', sans-serif;
+}
+
+/* 상단 */
+.doc-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 26px;
+    margin-bottom: 32px;
+}
+
+.brand {
+    display: flex;
+    flex-direction: column;
+}
+.brand-logo {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 34px;
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    color: #2a2a2a;
+    line-height: 1;
+}
+.brand-logo-img {
+    height: 48px;
+    width: auto;
+    display: block;
+}
+.brand-est {
+    font-size: 15px;
+    color: #999;
+    letter-spacing: 0.18em;
+    margin-top: 6px;
+    text-transform: uppercase;
+}
+
+.doc-title-wrap { text-align: right; }
+.doc-title {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    color: #2a2a2a;
+    line-height: 1;
+}
+.doc-meta {
+    margin-top: 7px;
+    font-size: 16px;
+    color: #999;
+    letter-spacing: 0.05em;
+}
+.doc-meta span { margin-left: 12px; }
+
+/* 정보 그리드 */
+.info-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+    margin-bottom: 36px;
+}
+
+.info-col-title {
+    font-size: 15px;
+    color: #999;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid #ddd;
+    font-weight: 500;
+}
+
+.info-row {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    padding: 3px 0;
+    font-size: 18px;
+    align-items: baseline;
+}
+
+.info-row .lab {
+    color: #999;
+    font-size: 16px;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+.info-row .val {
+    color: #2a2a2a;
+    font-weight: 500;
+    font-size: 18px;
+}
+.info-row .val.accent {
+    color: #FE647E;
+}
+
+/* 견적 테이블 */
+.q-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.q-table thead th {
+    background: #2a2a2a;
+    color: #fff;
+    padding: 15px 16px;
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.q-table .col-no { width: 6%; text-align: center; }
+.q-table .col-cat { width: 16%; text-align: left; }
+.q-table .col-detail { width: 58%; text-align: left; }
+.q-table .col-amt { width: 20%; text-align: right; }
+
+.q-table td {
+    padding: 17px 16px;
+    border-bottom: 1px solid #eee;
+    font-size: 18px;
+    vertical-align: top;
+}
+.q-table tr:last-child td { border-bottom: 1.5px solid #2a2a2a; }
+.q-table td[rowspan] { border-bottom: 1.5px solid #2a2a2a; }
+
+.q-table .cell-no {
+    text-align: center;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 17px;
+    color: #999;
+}
+
+.q-table .cell-cat {
+    font-weight: 600;
+    color: #2a2a2a;
+    font-size: 19px;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+}
+
+.q-table .cell-cat .sub {
+    font-size: 16px;
+    color: #999;
+    font-weight: 400;
+    margin-top: 4px;
+    letter-spacing: 0.02em;
+}
+
+.q-table .cell-amt {
+    text-align: right;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 19px;
+    color: #2a2a2a;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+.q-table .cell-amt.included {
+    color: #999;
+    font-size: 17px;
+    font-family: 'Pretendard', sans-serif;
+    font-style: italic;
+    font-weight: 400;
+}
+
+.detail-line {
+    padding: 2px 0;
+    color: #555;
+    font-size: 17px;
+    line-height: 1.65;
+}
+/* 항목 10개 이상일 때 자동 적용 */
+.q-table.compact td {
+    padding: 10px 16px;
+}
+.q-table.compact .detail-line {
+    padding: 1px 0;
+    line-height: 1.4;
+    font-size: 15px;
+}
+.q-table.compact .cell-no { font-size: 15px; }
+.q-table.compact .cell-cat { font-size: 16px; }
+.q-table.compact .cell-amt { font-size: 16px; }
+.detail-line::before {
+    content: none;
+}
+
+/* 합계 영역 */
+.totals {
+    margin-top: 0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.totals-box {
+    width: 50%;
+    min-width: 300px;
+}
+
+.total-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 12px 20px;
+    font-size: 16px;
+    border-bottom: 1px solid #eee;
+}
+.total-line .l { color: #888; letter-spacing: 0.05em; font-size: 15px; }
+.total-line .v {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 18px;
+    color: #2a2a2a;
+    font-weight: 500;
+}
+
+.total-line.discount .v { color: #FE647E; }
+
+.total-line.final {
+    background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+    color: #fff;
+    padding: 18px 20px;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+.total-line.final::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    transition: left 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.doc-wrap:hover .total-line.final::before { left: 150%; }
+
+.total-line.final .l {
+    color: #fff;
+    font-size: 15px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 500;
+    position: relative;
+}
+.total-line.final .v {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 28px;
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    position: relative;
+}
+
+/* PDF 출력 시에는 그라디언트와 광택 효과 비활성화 */
+.pdf-page .total-line.final { background: #2a2a2a !important; }
+.pdf-page .total-line.final::before { display: none !important; }
+
+/* 섹션 구분 */
+.doc-section {
+    margin-top: 44px;
+}
+
+.doc-section-title {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    color: #2a2a2a;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.doc-toggle-title {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    margin-bottom: 0;
+    transition: opacity 0.15s, color 0.15s;
+    padding-right: 4px;
+    position: relative;
+}
+.doc-toggle-title::before {
+    content: '';
+    position: absolute;
+    inset: -8px -12px;
+    background: rgba(255,107,157,0.04);
+    border-radius: 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: -1;
+}
+.doc-toggle-title:hover {
+    color: #2a2a2a;
+}
+.doc-toggle-title:hover::before { opacity: 1; }
+.doc-toggle-title.open  { margin-bottom: 14px; }
+
+.doc-toggle-body {
+    overflow: hidden;
+    animation: fadeInBody 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes fadeInBody {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.toggle-arrow {
+    display: flex;
+    align-items: center;
+    line-height: 1;
+}
+.toggle-arrow::after {
+    content: '▾';
+    font-size: 26px;
+    display: inline-block;
+    transition: transform 0.25s;
+    color: #bbb;
+}
+.doc-toggle-title.open .toggle-arrow::after {
+    transform: rotate(-180deg);
+    color: #2a2a2a;
+}
+
+.doc-toggle-body { overflow: visible; }
+
+/* PDF에서 토글 화살표 숨김 */
+.pdf-page .toggle-arrow { display: none !important; }
+.pdf-page .doc-toggle-title { cursor: default !important; }
+.pdf-page .doc-toggle-title::before { display: none !important; }
+.pdf-page .doc-toggle-body { animation: none !important; }
+
+/* 입력 오류 표시 */
+input.input-error {
+    border-color: #FE647E !important;
+    box-shadow: 0 0 0 2px rgba(255,107,157,0.15) !important;
+}
+.input-hint {
+    font-size: 11px;
+    color: #FE647E;
+    margin-top: 4px;
+    display: none;
+}
+.input-hint.show { display: block; }
+
+/* 브랜드 컨셉 / 메모 박스 */
+.brief-box {
+    display: none;
+    background: #f9f9f7;
+    border: 1px solid #e8e8e4;
+    border-radius: 3px;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    line-height: 1.65;
+    color: #555;
+}
+.brief-box-label {
+    font-size: 0.65em;
+    letter-spacing: 0.2em;
+    color: #999;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+.brief-box-text {
+    font-size: 0.75em;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* PDF 내 brief 박스 크기 보정 */
+.pdf-page .brief-box { font-size: 10px !important; padding: 7px 11px !important; margin-bottom: 14px !important; }
+.pdf-page .brief-box-label { font-size: 8.5px !important; }
+
+/* 작업 조건 — 기본 1단 6행 */
+.cond-grid {    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+}
+.cond-grid .cond-table {
+    width: 100%;
+}
+.cond-grid .cond-table:first-child tr:last-child td {
+    border-bottom: 1px solid #eee;
+}
+
+/* 1400px 초과 시 2단 3행 */
+@media (min-width: 1400px) {
+    .cond-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0 48px;
+    }
+    .cond-grid .cond-table:first-child tr:last-child td {
+        border-bottom: none;
+    }
+}
+
+/* 작업 조건 표 */
+.cond-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+    table-layout: fixed;
+}
+.cond-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+.cond-table td:first-child {
+    width: 130px;
+    color: #888;
+    font-size: 15px;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+.cond-table td:nth-child(2) {
+    width: 130px;
+    color: #2a2a2a;
+    font-size: 16px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.cond-table td:last-child {
+    color: #bbb;
+    text-align: right;
+    font-size: 14px;
+    white-space: nowrap;
+    font-style: italic;
+    padding-right: 4px;
+}
+.cond-grid .cond-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* 산출물 */
+.deliv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 8px;
+}
+.deliv-card {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 14px 16px;
+}
+.deliv-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #2a2a2a;
+    margin-bottom: 7px;
+    letter-spacing: 0.03em;
+}
+.deliv-card-list {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.75;
+}
+.deliv-card-list div::before {
+    content: '·';
+    margin-right: 5px;
+    color: #aaa;
+}
+
+/* 프로세스 */
+.process-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-top: 8px;
+}
+.process-step {
+    padding: 14px 14px;
+    border-right: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+}
+.process-step:nth-child(4n) { border-right: none; }
+.process-step:nth-child(n+5) { background: #fafafa; }
+
+.process-step-num {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 12px;
+    color: #FE647E;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+}
+.process-step-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #2a2a2a;
+    margin-bottom: 5px;
+}
+.process-step-desc {
+    font-size: 12px;
+    color: #888;
+    line-height: 1.55;
+}
+
+/* 디자인 프로세스 — 표 형태 (작업 조건 스타일 맞춤) */
+.process-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 16px;
+}
+.process-table tr {
+    border-bottom: 1px solid #eee;
+}
+.process-table tr:last-child {
+    border-bottom: none;
+}
+.process-table td {
+    padding: 10px 12px;
+    vertical-align: middle;
+}
+.process-table .pt-num {
+    width: 50px;
+    font-family: 'Pretendard', sans-serif;
+    font-weight: 400;
+    color: #888;
+    letter-spacing: 0.03em;
+    font-size: 15px;
+    text-align: left;
+    padding: 10px 6px;
+}
+.process-table .pt-title {
+    width: 130px;
+    font-weight: 500;
+    color: #2a2a2a;
+    font-size: 16px;
+    white-space: nowrap;
+}
+.process-table .pt-desc {
+    color: #666;
+    font-size: 15px;
+    text-align: left;
+    padding-right: 4px;
+    line-height: 1.55;
+}
+
+/* 약관 */
+.terms-block {
+    background: #fafafa;
+    padding: 20px 26px;
+    border-radius: 4px;
+    font-size: 15px;
+    line-height: 1.9;
+    color: #555;
+    margin-top: 8px;
+}
+.terms-block .terms-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    margin-bottom: 5px;
+    align-items: baseline;
+}
+.terms-block .terms-row strong {
+    color: #2a2a2a;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+}
+.terms-block .terms-row span {
+    color: #555;
+}
+
+/* 푸터 */
+.doc-footer {
+    margin-top: 52px;
+    padding-top: 24px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: #999;
+    letter-spacing: 0.08em;
+}
+
+.doc-footer .signature {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    color: #aaa;
+    letter-spacing: 0.08em;
+}
+
+/* 반응형 */
+@media (max-width: 1280px) {
+    .layout { grid-template-columns: 1fr; }
+    .form-panel { position: static; max-height: none; }
+}
+
+@media (max-width: 900px) {
+    body::after { display: none; }
+    body::before { opacity: 0.3; }
+    body { padding: 1.25rem; }
+    .doc { padding: 42px 38px; font-size: 17px; }
+    .info-block { gap: 28px; }
+    .doc-section { margin-top: 34px; }
+    .deliv-grid { gap: 12px; }
+    .brand-logo { font-size: 24px; }
+    .doc-title { font-size: 28px; }
+    .total-line.final .v { font-size: 24px; }
+
+    .cond-table { font-size: 15px; }
+    .cond-table td { padding: 9px 10px; }
+    .cond-table td:first-child { width: 130px; font-size: 14px; }
+    .cond-table td:nth-child(2) { width: auto; font-size: 15px; }
+    .cond-table td:last-child { font-size: 13px; }
+}
+
+@media (max-width: 720px) {
+    body { padding: 1rem; }
+    .app-title { font-size: 1.5rem; }
+    .doc { padding: 30px 24px; font-size: 14px; }
+
+    .doc-top {
+        flex-direction: column;
+        gap: 14px;
+        padding-bottom: 20px;
+        margin-bottom: 24px;
+    }
+    .doc-title-wrap { text-align: left; }
+    .brand-logo { font-size: 20px; }
+    .doc-title { font-size: 22px; letter-spacing: 0.32em; }
+
+    .info-block { grid-template-columns: 1fr; gap: 20px; margin-bottom: 26px; }
+    .info-row { grid-template-columns: 72px 1fr; }
+    .info-row .lab { font-size: 12px; }
+    .info-row .val { font-size: 13px; }
+
+    .q-table thead th { font-size: 11px; padding: 8px 7px; letter-spacing: 0.1em; }
+    .q-table td { padding: 10px 7px; font-size: 13px; }
+    .q-table .cell-cat { font-size: 13px; }
+    .q-table .cell-cat .sub { font-size: 11px; }
+    .q-table .cell-amt { font-size: 13px; }
+    .detail-line { font-size: 12px; }
+
+    .totals-box { width: 100%; min-width: 0; }
+    .total-line { padding: 8px 14px; }
+    .total-line .l { font-size: 12px; }
+    .total-line .v { font-size: 14px; }
+    .total-line.final .v { font-size: 20px; }
+    .total-line.final { padding: 14px 14px; }
+
+    .cond-grid .cond-table tr:last-child td { border-bottom: 1px solid #eee; }
+    .cond-table td:first-child { width: 88px; font-size: 13px; }
+    .cond-table td:nth-child(2) { font-size: 14px; }
+    .cond-table td:last-child { font-size: 12px; }
+
+    .deliv-grid { grid-template-columns: 1fr; }
+    .deliv-card-title { font-size: 14px; }
+    .deliv-card-list { font-size: 12px; }
+
+    .terms-block { padding: 15px 18px; font-size: 13px; }
+    .terms-block .terms-row { grid-template-columns: 100px 1fr; }
+    .terms-block .terms-row strong { font-size: 13px; }
+
+    .doc-footer {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+        font-size: 11px;
+    }
+    .doc-footer .signature { font-size: 14px; }
+}
+
+@media (max-width: 480px) {
+    body { padding: 0.75rem; }
+    .doc { padding: 24px 18px; font-size: 13px; }
+    .brand-logo { font-size: 18px; }
+    .doc-title { font-size: 20px; letter-spacing: 0.28em; }
+    .info-row { grid-template-columns: 64px 1fr; padding: 4px 0; }
+    .info-row .lab { font-size: 11px; }
+    .info-row .val { font-size: 12px; }
+
+    .q-table thead th { font-size: 10px; padding: 7px 5px; }
+    .q-table td { padding: 8px 5px; font-size: 12px; }
+    .q-table .col-no { width: 8%; }
+    .q-table .col-cat { width: 26%; }
+    .q-table .col-detail { width: 44%; }
+    .q-table .col-amt { width: 22%; }
+    .q-table .cell-cat { font-size: 12px; white-space: normal; }
+    .q-table .cell-amt { font-size: 12px; }
+    .detail-line { font-size: 11px; }
+
+    .total-line.final .v { font-size: 18px; }
+    .total-line.final .l { font-size: 11px; letter-spacing: 0.12em; }
+
+    .doc-section-title { font-size: 11px; }
+    .cond-table td:first-child { width: 80px; font-size: 11px; }
+    .cond-table td:nth-child(2) { font-size: 12px; }
+
+    .terms-block { font-size: 12px; padding: 12px 14px; }
+    .terms-block .terms-row { grid-template-columns: 90px 1fr; }
+}
+
+@media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { background: #fff !important; padding: 0 !important; }
+    .form-panel, .actions, .app-header, .layout > *:first-child { display: none !important; }
+    .layout { display: block !important; }
+    @page { size: A4 portrait; margin: 0; }
+}
+
+/* ============================== */
+/* PDF 미리보기 모달 (A4 분할)    */
+/* ============================== */
+.pdf-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    overflow: auto;
+    padding: 2rem;
+    /* 모바일에서도 PC 기준 폭이 그대로 유지되어야 하므로 가로 스크롤 허용 */
+    -webkit-overflow-scrolling: touch;
+}
+.pdf-modal.active { display: block; }
+
+.pdf-modal-header {
+    position: sticky;
+    top: 0;
+    background: rgba(12, 12, 12, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.pdf-modal-title {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    color: #fff;
+}
+
+.pdf-modal-info {
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 2px;
+}
+
+.pdf-modal-actions {
+    display: flex;
+    gap: 0.6rem;
+}
+
+.pdf-page-container {
+    /* PC 기준 A4 고정 폭 — 화면 크기와 무관하게 항상 동일 */
+    width: 800px;
+    margin: 0 auto;
+}
+
+/* A4 비율: 210mm x 297mm = 1 : 1.414 */
+/* 출력 기준: 10pt ≒ 13.3px (A4 800px 기준 스케일 적용) */
+/* 화면 폭과 무관하게 항상 PC A4 기준 800px 고정 */
+.pdf-page {
+    background: #fff;
+    color: #2a2a2a;
+    width: 800px;
+    height: 1131px; /* 800 * (297/210) ≒ 1131px, A4 비율 고정 */
+    margin-bottom: 2rem;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    overflow: hidden;
+    position: relative;
+    padding: 36px 44px 44px;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+/* PDF 내부 오버라이드 — 모든 텍스트 요소 축소 */
+.pdf-page .brand-logo { font-size: 20px !important; letter-spacing: 0.25em !important; }
+.pdf-page .brand-logo-img { height: 34px !important; width: auto !important; }
+.pdf-page .brand-est  { font-size: 9px !important; }
+.pdf-page .doc-title  { font-size: 22px !important; letter-spacing: 0.35em !important; }
+.pdf-page .doc-meta   { font-size: 10px !important; }
+
+.pdf-page .info-col-title { font-size: 9.5px !important; margin-bottom: 7px !important; padding-bottom: 4px !important; }
+.pdf-page .info-row   { font-size: 11px !important; padding: 2.5px 0 !important; grid-template-columns: 70px 1fr !important; }
+.pdf-page .info-row .lab { font-size: 10px !important; }
+.pdf-page .info-row .val { font-size: 11px !important; }
+.pdf-page .info-block { gap: 20px !important; margin-bottom: 18px !important; grid-template-columns: 1fr 1fr !important; display: grid !important; }
+.pdf-page .doc-top    { padding-bottom: 14px !important; margin-bottom: 16px !important; flex-direction: row !important; display: flex !important; align-items: flex-start !important; }
+
+.pdf-page .q-table thead th { font-size: 10px !important; padding: 7px 9px !important; letter-spacing: 0.12em !important; }
+.pdf-page .q-table td        { font-size: 11px !important; padding: 8px 9px !important; }
+.pdf-page .q-table .cell-no  { font-size: 10px !important; }
+.pdf-page .q-table .cell-cat { font-size: 11.5px !important; }
+.pdf-page .q-table .cell-cat .sub { font-size: 9.5px !important; }
+.pdf-page .q-table .cell-amt { font-size: 11.5px !important; }
+.pdf-page .q-table .cell-amt.included { font-size: 10px !important; }
+.pdf-page .q-table.compact td { padding: 8px 9px !important; }
+.pdf-page .q-table.compact .detail-line { padding: 1px 0 !important; line-height: 1.45 !important; font-size: 11px !important; }
+.pdf-page .q-table.compact .cell-no { font-size: 10px !important; }
+.pdf-page .q-table.compact .cell-cat { font-size: 11.5px !important; }
+.pdf-page .q-table.compact .cell-amt { font-size: 11.5px !important; }
+
+.pdf-page .detail-line       { font-size: 11px !important; padding: 1px 0 !important; }
+
+.pdf-page .total-line        { font-size: 11px !important; padding: 6px 12px !important; }
+.pdf-page .total-line .l     { font-size: 10.5px !important; }
+.pdf-page .total-line .v     { font-size: 11.5px !important; }
+.pdf-page .total-line.final  { padding: 10px 12px !important; }
+.pdf-page .total-line.final .l { font-size: 10.5px !important; letter-spacing: 0.18em !important; }
+.pdf-page .total-line.final .v { font-size: 16px !important; }
+.pdf-page .totals-box        { min-width: 220px !important; }
+
+.pdf-page .doc-section       { margin-top: 38px !important; }
+.pdf-page .doc-section-title { font-size: 12px !important; letter-spacing: 0.22em !important; margin-bottom: 8px !important; padding-bottom: 5px !important; }
+
+.pdf-page .cond-table        { font-size: 10.5px !important; }
+.pdf-page .cond-table td     { padding: 5px 9px !important; font-size: 10.5px !important; }
+.pdf-page .cond-table td:first-child { font-size: 10px !important; width: 90px !important; min-width: 90px !important; color: #999 !important; }
+.pdf-page .cond-table td:last-child  { font-size: 9.5px !important; white-space: nowrap !important; color: #aaa !important; font-style: normal !important; }
+
+.pdf-page .terms-block       { font-size: 10.5px !important; line-height: 1.75 !important; padding: 12px 16px !important; }
+.pdf-page .terms-block .terms-row { grid-template-columns: 90px 1fr !important; margin-bottom: 2px !important; }
+.pdf-page .terms-block .terms-row strong { font-size: 10.5px !important; }
+
+.pdf-page .doc-footer        { margin-top: 28px !important; padding-top: 14px !important; font-size: 9px !important; flex-direction: row !important; display: flex !important; align-items: center !important; }
+.pdf-page .doc-footer .signature { font-size: 10px !important; letter-spacing: 0.08em !important; font-weight: 400 !important; color: #aaa !important; }
+
+.pdf-page .deliv-grid        { gap: 10px !important; grid-template-columns: 1fr 1fr !important; display: grid !important; }
+.pdf-page .deliv-card        { padding: 10px 12px !important; }
+.pdf-page .deliv-card-title  { font-size: 11.5px !important; margin-bottom: 5px !important; }
+.pdf-page .deliv-card-list   { font-size: 10.5px !important; line-height: 1.65 !important; }
+
+.pdf-page .process-step      { padding: 9px 9px !important; }
+.pdf-page .process-step-num  { font-size: 10px !important; margin-bottom: 3px !important; }
+.pdf-page .process-step-title { font-size: 11.5px !important; margin-bottom: 2px !important; }
+.pdf-page .process-step-desc { font-size: 10px !important; }
+
+.pdf-page .process-table        { font-size: 10.5px !important; margin-top: 6px !important; }
+.pdf-page .process-table td     { padding: 5px 9px !important; font-size: 10.5px !important; }
+.pdf-page .process-table .pt-num    { font-size: 10px !important; width: 40px !important; min-width: 40px !important; color: #999 !important; padding: 5px 4px !important; }
+.pdf-page .process-table .pt-title  { font-size: 10.5px !important; font-weight: 500 !important; }
+.pdf-page .process-table .pt-desc   { font-size: 10px !important; color: #777 !important; line-height: 1.5 !important; }
+
+.pdf-page-num {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Pretendard', sans-serif;
+    font-size: 10px;
+    color: #bbb;
+    letter-spacing: 0.1em;
+}
+
+.pdf-page-footer {
+    position: absolute;
+    bottom: 28px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 9px;
+    color: #999;
+    padding: 0 52px;
+}
+
+.pdf-footer-left {
+    text-align: left;
+    color: #999;
+}
+
+.pdf-footer-center {
+    text-align: center;
+    color: #bbb;
+    letter-spacing: 0.1em;
+    font-size: 10px;
+}
+
+.pdf-footer-right {
+    text-align: right;
+    color: #aaa;
+    font-size: 10px;
+}
+
+.pdf-page-content {
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+.page-tag {
+    position: absolute;
+    top: -1.2rem;
+    left: 0;
+    font-size: 0.7rem;
+    color: #888;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* ============================================ */
+/* PDF 미리보기 — 화면 폭과 무관하게 A4 PC 기준 고정  */
+/* 모바일에서는 transform: scale 로 시각적으로만 축소 */
+/* (실제 width/height/font는 그대로 → html2canvas */
+/*  캡처 결과는 어떤 환경에서도 PC 기준과 동일)     */
+/* ============================================ */
+@media (max-width: 900px) {
+    .pdf-modal { padding: 1rem 0.5rem; }
+    .pdf-modal-header {
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .pdf-page-container {
+        /* 800px 고정 + 화면 폭에 맞춰 시각적으로만 축소 */
+        transform: scale(calc((100vw - 32px) / 800));
+        transform-origin: top center;
+        /* 축소된 시각적 높이만큼 아래 여백을 줄여 자연스럽게 보이게 */
+        margin-bottom: calc(((100vw - 32px) / 800 - 1) * 1131px * 1);
+    }
+}
+@media (max-width: 480px) {
+    .pdf-modal { padding: 0.75rem 0.25rem; }
+    .pdf-page-container {
+        transform: scale(calc((100vw - 16px) / 800));
+    }
+}
+
+/* 접근성: 사용자가 모션 감소를 선호하는 경우 */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+    body::after { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+    <div class="app-header">
+        <div class="app-title">PERSUS / Quote Builder</div>
+        <div class="app-subtitle">화장품 패키지 디자인 견적서 시스템</div>
+    </div>
+
+    <div class="layout">
+        <!-- ============= 입력 폼 ============= -->
+        <div class="form-panel">
+
+            <!-- 1. 클라이언트 정보 -->
+            <div class="section">
+                <div class="section-head">
+                    <div class="section-title">클라이언트 정보</div>
+                </div>
+
+                <div class="fld">
+                    <label>회사명 <span class="req">*</span></label>
+                    <input type="text" id="company" placeholder="(주)○○" oninput="render()">
+                </div>
+                <div class="row">
+                    <div class="fld">
+                        <label>담당자 <span class="req">*</span></label>
+                        <input type="text" id="contact" placeholder="홍길동 매니저" oninput="render()">
+                    </div>
+                    <div class="fld">
+                        <label>연락처 <span class="req">*</span></label>
+                        <input type="tel" id="phone" placeholder="숫자와 하이픈 입력 (예: 010-1234-5678)" oninput="formatPhone(this); render()" inputmode="numeric">
+                        <div class="input-hint" id="phoneHint">숫자와 하이픈(-)만 입력 가능합니다</div>
+                    </div>
+                </div>
+                <div class="fld">
+                    <label>이메일 <span class="req">*</span></label>
+                    <input type="email" id="email" placeholder="contact@brand.com" oninput="validateEmail(this); render()">
+                    <div class="input-hint" id="emailHint">@ 를 포함한 이메일 주소를 입력해주세요</div>
+                </div>
+                <div class="fld">
+                    <label>프로젝트명</label>
+                    <input type="text" id="project" placeholder="화장품 패키지 디자인" oninput="render()">
+                </div>
+                <input type="hidden" id="brief" value="">
+            </div>
+
+            <!-- 3. 메인 품목 -->
+            <div class="section">
+                <div class="section-head">
+                    <div class="section-title">메인 품목</div>
+                </div>
+                <p class="section-hint">라인의 첫 번째 제품 — 컨셉과 톤을 결정하는 시그니처 디자인입니다.</p>
+
+                <div class="fld">
+                    <label>제품명</label>
+                    <input type="text" id="mainName" placeholder="예: 미스트, 크림, 세럼" oninput="render()">
+                </div>
+
+                <div class="fld">
+                    <label>구성 요소</label>
+                    <div class="opt-card">
+                        <div class="chk-group-label" style="margin-top:0;">용기</div>
+                        <div class="chk-row" id="m-container-row" style="margin:0 0 0.6rem 0; padding:0.4rem 0.5rem; flex-wrap:wrap;">
+                            <label class="chk" onclick="selectOne('m-container-row', this)">
+                                <input type="radio" name="m-container" value="병" onchange="render()"><span class="radio-dot"></span> 병
+                            </label>
+                            <label class="chk" onclick="selectOne('m-container-row', this)">
+                                <input type="radio" name="m-container" value="튜브" onchange="render()"><span class="radio-dot"></span> 튜브
+                            </label>
+                            <label class="chk" onclick="selectOne('m-container-row', this)">
+                                <input type="radio" name="m-container" value="크림자" onchange="render()"><span class="radio-dot"></span> 크림자
+                            </label>
+                            <label class="chk" onclick="selectOne('m-container-row', this)">
+                                <input type="radio" name="m-container" value="파우치" onchange="render()"><span class="radio-dot"></span> 파우치
+                            </label>
+                        </div>
+
+                        <div class="chk-group-label">박스</div>
+                        <div class="chk-row" id="m-box-row" style="margin:0; padding:0.4rem 0.5rem; flex-wrap:wrap;">
+                            <label class="chk" onclick="selectOne('m-box-row', this); toggleBoxSub('main', this)">
+                                <input type="radio" name="m-box" value="단상자" onchange="render()"><span class="radio-dot"></span> 단상자
+                            </label>
+                            <label class="chk" onclick="selectOne('m-box-row', this); toggleBoxSub('main', this)">
+                                <input type="radio" name="m-box" value="싸바리 박스" onchange="render()"><span class="radio-dot"></span> 싸바리 박스
+                            </label>
+                            <label class="chk" onclick="selectOne('m-box-row', this); toggleBoxSub('main', this)">
+                                <input type="radio" name="m-box" value="상하박스" onchange="render()"><span class="radio-dot"></span> 상하박스
+                            </label>
+                            <label class="chk" onclick="selectOne('m-box-row', this); toggleBoxSub('main', this)">
+                                <input type="radio" name="m-box" value="none" onchange="render()"><span class="radio-dot"></span> 없음
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="mainAmount" value="800000">
+            </div>
+
+            <!-- 4. 시리즈 라인 확장 -->
+            <div class="section">
+                <div class="section-head">
+                    <div class="section-title">베리에이션 품목</div>
+                </div>
+                <p class="section-hint">메인 컨셉을 적용한 베리에이션 제품군</p>
+
+                <div id="seriesBlock" style="display:none;">
+                    <div class="row">
+                        <div class="fld">
+                            <label>제품 종 수</label>
+                            <select id="seriesQty" onchange="renderSeriesItems()">
+                                <option value="0">— 선택 —</option>
+                                <option value="1">1종</option>
+                                <option value="2">2종</option>
+                                <option value="3">3종</option>
+                                <option value="4">4종</option>
+                                <option value="5">5종</option>
+                                <option value="6">6종</option>
+                                <option value="7">7종</option>
+                                <option value="8">8종</option>
+                                <option value="9">9종</option>
+                                <option value="10">10종</option>
+                            </select>
+                        </div>
+                    </div>
+                    <input type="hidden" id="seriesUnit" value="400000">
+
+                    <div id="seriesItemList"></div>
+
+                </div>
+
+                <button class="btn-line" id="seriesAddBtn" onclick="addSeries()" style="display:none;">+ 시리즈 라인 추가</button>
+            </div>
+
+            <!-- 4. 용기 사양 컨설팅 -->
+            <div class="section" id="techSection" style="display:none;">
+                <div class="section-head" style="margin-bottom:0.5rem;">
+                    <div class="section-title">용기 사양 컨설팅</div>
+                </div>
+                <div class="toggle-row" style="padding: 0.3rem 0;">
+                    <div style="flex:1;">
+                        <div style="font-weight:700; color:#FE647E; font-size:0.88rem; animation:blink 1.4s ease-in-out infinite; margin-bottom:0.3rem;">[프로젝트 전 품목 통합 적용]</div>
+                        <div class="toggle-desc" style="color:rgba(255,255,255,0.70); font-size:0.92rem; font-weight:500; line-height:1.6;">용기 자체의 컬러 및 후가공 (박 / 증착 / 코팅 등) 제안</div>
+                    </div>
+                    <div class="switch" id="techSwitch" onclick="toggleSwitch('tech')"></div>
+                </div>
+            </div>
+
+            <!-- 5. 추가 옵션 -->
+            <div class="section">
+                <div class="section-head">
+                    <div class="section-title">추가 옵션</div>
+                </div>
+                <p class="section-hint">선택 시 견적에 자동 포함됩니다.</p>
+
+                <div id="optionsContainer">
+                    <!-- JS로 생성 -->
+                </div>
+            </div>
+
+            <!-- 고정값 hidden -->
+            <input type="hidden" id="workdays" value="6영업일">
+            <input type="hidden" id="drafts" value="3안">
+            <input type="hidden" id="revisions" value="3회">
+            <input type="hidden" id="extraRev" value="회당 50,000원">
+            <input type="hidden" id="discountRate" value="0">
+            <input type="hidden" id="discountReason" value="">
+
+            <!-- 액션 -->
+            <div class="actions-wrap">
+                <label class="consent-row">
+                    <input type="checkbox" id="agreeConsent">
+                    <span>견적 내용을 페르수스에 전송하며, 향후 프로젝트 관련 상담에 활용하는 데 동의합니다.</span>
+                </label>
+                <button class="btn-primary btn-full" onclick="handleDownloadRequest()">동의 및 PDF 견적서 다운로드</button>
+            </div>
+        </div>
+
+        <!-- ============= 미리보기 ============= -->
+        <div class="preview-panel">
+            <div class="doc-wrap" id="docWrap">
+                <div class="doc" id="doc">
+
+                    <!-- 상단 -->
+                    <div class="doc-top">
+                        <div class="brand">
+                            <img src="data:image/png;base64,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" alt="PERSUS" class="brand-logo-img" style="height: 48px; width: auto;">
+                        </div>
+                        <div class="doc-title-wrap">
+                            <div class="doc-title">견적서</div>
+                        </div>
+                    </div>
+
+                    <!-- 정보 -->
+                    <div class="info-block">
+                        <div>
+                            <div class="info-col-title">From — 공급자</div>
+                            <div class="info-row"><div class="lab">상호</div><div class="val">페르수스</div></div>
+                            <div class="info-row"><div class="lab">담당자</div><div class="val">배수현</div></div>
+                            <div class="info-row"><div class="lab">연락처</div><div class="val">0507-1367-9820</div></div>
+                            <div class="info-row"><div class="lab">이메일</div><div class="val">persus24@naver.com</div></div>
+                            <div class="info-row"><div class="lab">작성일자</div><div class="val" id="dFromDate">—</div></div>
+                        </div>
+                        <div>
+                            <div class="info-col-title">To — 수신자</div>
+                            <div class="info-row"><div class="lab">회사</div><div class="val" id="dCompany">—</div></div>
+                            <div class="info-row"><div class="lab">담당자</div><div class="val" id="dContact">—</div></div>
+                            <div class="info-row"><div class="lab">연락처</div><div class="val" id="dPhone">—</div></div>
+                            <div class="info-row"><div class="lab">이메일</div><div class="val" id="dEmail">—</div></div>
+                            <div class="info-row"><div class="lab">프로젝트</div><div class="val accent" id="dProject">—</div></div>
+                        </div>
+                    </div>
+
+                    <!-- 브랜드 컨셉 / 메모 -->
+                    <div class="brief-box" id="dBriefBox">
+                        <div class="brief-box-label">Brand Launching · 브랜드 런칭 일자</div>
+                        <div class="brief-box-text" id="dBrief"></div>
+                    </div>
+
+                    <!-- 견적 테이블 -->
+                    <table class="q-table">
+                        <thead>
+                            <tr>
+                                <th class="col-no">No.</th>
+                                <th class="col-cat">항목</th>
+                                <th class="col-detail">상세 내용</th>
+                                <th class="col-amt">금액 <span style="font-size:0.7em; font-weight:400; opacity:0.7;">(KRW)</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="qBody"></tbody>
+                    </table>
+
+                    <!-- 합계 -->
+                    <div class="totals">
+                        <div class="totals-box">
+                            <div class="total-line"><div class="l">소계 Subtotal</div><div class="v" id="tSub">₩ 0</div></div>
+                            <div class="total-line discount" id="tDiscRow" style="display:none;"><div class="l" id="tDiscLabel">할인</div><div class="v" id="tDisc">- ₩ 0</div></div>
+                            <div class="total-line"><div class="l">VAT (10%)</div><div class="v" id="tVat">₩ 0</div></div>
+                            <div class="total-line final"><div class="l">Total</div><div class="v" id="tTotal">₩ 0</div></div>
+                        </div>
+                    </div>
+
+                    <!-- 작업 조건 -->
+                    <div class="doc-section doc-section-break">
+                        <div class="doc-section-title doc-toggle-title" onclick="toggleSection(this)">
+                            Work Conditions · 작업 조건
+                            <span class="toggle-arrow"></span>
+                        </div>
+                        <div class="doc-toggle-body" style="display:none;">
+                            <div class="cond-grid">
+                                <table class="cond-table">
+                                    <tr><td>초안 작업일</td><td id="dWorkdays">—</td><td>주말·공휴일 제외</td></tr>
+                                    <tr><td>시안 개수</td><td id="dDrafts">—</td><td>컨셉별 베리에이션</td></tr>
+                                    <tr><td>디자인 수정</td><td id="dRevisions">—</td><td>색상·서체·레이아웃 등</td></tr>
+                                </table>
+                                <table class="cond-table">
+                                    <tr><td>문구 수정</td><td>5회</td><td>전성분·용량·제조원 등</td></tr>
+                                    <tr><td>디자인 수정 추가</td><td id="dExtraRev">—</td><td>초과 시</td></tr>
+                                    <tr><td>문구 수정 추가</td><td>회당 10,000원</td><td>초과 시</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 디자인 프로세스 -->
+                    <div class="doc-section">
+                        <div class="doc-section-title doc-toggle-title" onclick="toggleSection(this)">
+                            Design Process · 디자인 프로세스
+                            <span class="toggle-arrow"></span>
+                        </div>
+                        <div class="doc-toggle-body" style="display:none;">
+                            <table class="process-table">
+                                <tr>
+                                    <td class="pt-num">01</td>
+                                    <td class="pt-title">상담</td>
+                                    <td class="pt-desc">클라이언트의 니즈를 정확히 파악하기 위해 초기 상담을 진행합니다.</td>
+                                </tr>
+                                <tr>
+                                    <td class="pt-num">02</td>
+                                    <td class="pt-title">견적 안내</td>
+                                    <td class="pt-desc">상담과 설문 결과를 토대로 작업 범위와 일정을 확정하고 견적을 안내합니다.</td>
+                                </tr>
+                                <tr>
+                                    <td class="pt-num">03</td>
+                                    <td class="pt-title">계약서 작성 및 선금 입금</td>
+                                    <td class="pt-desc">전자계약서를 작성하고 총 금액의 50%를 선금으로 입금해주시면 디자인 작업이 착수됩니다.</td>
+                                </tr>
+                                <tr>
+                                    <td class="pt-num">04</td>
+                                    <td class="pt-title">디자인 시안 제작</td>
+                                    <td class="pt-desc">수집된 자료와 요구사항을 반영해 디자인 시안을 제작하여 제안합니다.</td>
+                                </tr>
+                                <tr>
+                                    <td class="pt-num">05</td>
+                                    <td class="pt-title">피드백 및 수정</td>
+                                    <td class="pt-desc">제안된 시안에 대한 피드백을 반영해 수정 / 보완 작업을 진행합니다.</td>
+                                </tr>
+                                <tr>
+                                    <td class="pt-num">06</td>
+                                    <td class="pt-title">최종 디자인 확정</td>
+                                    <td class="pt-desc">수정 과정을 거쳐 최종 디자인을 확정하고 클라이언트의 승인을 받습니다.</td>
+                                </tr>
+                                <tr>
+                                    <td class="pt-num">07</td>
+                                    <td class="pt-title">잔금 결제</td>
+                                    <td class="pt-desc">최종 확정 후 잔금 50%를 결제하면 납품 절차가 진행됩니다.</td>
+                                </tr>
+                                <tr>
+                                    <td class="pt-num">08</td>
+                                    <td class="pt-title">최종 파일 납품</td>
+                                    <td class="pt-desc">완성된 로고는 AI, PDF, JPG 등 다양한 활용 목적에 맞는 파일로 제공합니다.</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 결제 약관 -->
+                    <div class="doc-section">
+                        <div class="doc-section-title doc-toggle-title" onclick="toggleSection(this)">
+                            Terms · 결제 및 약관
+                            <span class="toggle-arrow"></span>
+                        </div>
+                        <div class="doc-toggle-body" style="display:none;">
+                            <div class="terms-block">
+                                <div class="terms-row"><strong>1. 견적 유효 기간</strong><span id="dValid">본 견적은 발행일로부터 14일간 유효합니다.</span></div>
+                                <div class="terms-row"><strong>2. 대금 지급 방법</strong><span>원활한 프로젝트 진행을 위해 대금은 아래와 같이 분할 납부를 원칙으로 합니다.<br>• 선금 (50%) : 계약 체결 시 선금 입금 확인 후 작업을 시작합니다.<br>• 잔금 (50%) : 디자인 확정 후 잔금 50% 입금이 확인되면, 인쇄 및 제작을 위한 최종 데이터를 전달해 드립니다.<br>• [중도금 발생 조건] * 제작 공정상 데이터 선제공(샘플 인쇄 등)이 필요한 경우, 중도금(30%) 정산 후 데이터 전송이 가능하며 이 경우 잔금은 20%로 자동 조정됩니다.</span></div>
+                                <div class="terms-row"><strong>3. 입금 계좌 안내</strong><span>기업은행 114-147961-04-010 (예금주: 배수현/페르수스디자인)</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 푸터 -->
+                    <div class="doc-footer">
+                        <div>화장품 패키지 · BI 디자인 전문_페르수스입니다.</div>
+                        <div class="signature">www.persus.co.kr</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============= PDF 미리보기 모달 ============= -->
+<div class="pdf-modal" id="pdfModal">
+    <div class="pdf-modal-header">
+        <div>
+            <div class="pdf-modal-title">PDF PREVIEW · A4 페이지 분할</div>
+            <div class="pdf-modal-info" id="pdfModalInfo">총 <span id="pageCount">0</span>페이지 · 다운로드 시 이대로 출력됩니다</div>
+        </div>
+        <div class="pdf-modal-actions">
+            <button class="btn-ghost" onclick="closePdfPreview()" style="padding: 0.6rem 1.2rem; flex:none;">닫기</button>
+            <button class="btn-primary" onclick="handleDownloadRequest()" style="padding: 0.6rem 1.2rem; flex:none;">PDF 다운로드</button>
+        </div>
+    </div>
+    <div class="pdf-page-container" id="pdfPageContainer"></div>
+</div>
+
+<script>
+// 추가 옵션 정의 (수량 선택 방식 항목은 별도 처리)
+const ADDITIONAL_OPTIONS = [
+];
+
+const state = {
+    series: false,
+    tech: false,
+    options: {},
+    labelQty: 0,
+    bagQty: 0,
+    outboxQty: 0
+};
+
+// 메일 전송용 스냅샷 — render() 실행 시마다 갱신
+let quoteSnapshot = { items: [], subtotal: 0, discount: 0, vat: 0, total: 0 };
+
+// 초기화
+// 전화번호 입력 — 숫자와 하이픈만 허용
+function formatPhone(input) {
+    const val = input.value.replace(/[^0-9\-]/g, '');
+    const hasInvalid = input.value !== val;
+    input.value = val;
+    input.classList.toggle('input-error', hasInvalid);
+    document.getElementById('phoneHint')?.classList.toggle('show', hasInvalid);
+}
+
+// 이메일 @ 포함 여부 검증
+function validateEmail(input) {
+    const hint = document.getElementById('emailHint');
+    const val = input.value.trim();
+    const invalid = val.length > 0 && !val.includes('@');
+    input.classList.toggle('input-error', invalid);
+    hint?.classList.toggle('show', invalid);
+}
+
+// 섹션 토글 (웹 미리보기 전용)
+function toggleSection(titleEl) {
+    const body = titleEl.nextElementSibling;
+    const isOpen = titleEl.classList.contains('open');
+    if (isOpen) {
+        body.style.display = 'none';
+        titleEl.classList.remove('open');
+    } else {
+        body.style.display = 'block';
+        titleEl.classList.add('open');
+    }
+}
+
+function init() {
+    // 추가 옵션 렌더
+    const optBox = document.getElementById('optionsContainer');
+    ADDITIONAL_OPTIONS.forEach(opt => {
+        state.options[opt.id] = false;
+        const row = document.createElement('div');
+        row.className = 'toggle-row';
+        row.innerHTML = `
+            <div style="flex:1; padding-right: 0.5rem;">
+                <div class="toggle-label">${opt.name}</div>
+                <div class="toggle-desc">${opt.desc}</div>
+            </div>
+            <div class="switch" id="optSwitch-${opt.id}" onclick="toggleOption('${opt.id}')"></div>
+        `;
+        optBox.appendChild(row);
+    });
+
+    // 스티커 수량 선택 UI
+    const labelRow = document.createElement('div');
+    labelRow.className = 'toggle-row';
+    labelRow.style.cssText = 'align-items:center;';
+    labelRow.innerHTML = `
+        <div style="flex:1; padding-right:0.5rem;">
+            <div class="toggle-label">개봉 방지/봉인 스티커</div>
+            <div class="toggle-desc">단상자 입구 등에 부착되는 버진 씰(Virgin Seal) 또는 개봉 방지용 스티커 디자인 · 1종당 ₩ 50,000</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
+            <button onclick="changeLabelQty(-1)" style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#e0e0e0;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,107,157,0.15)';this.style.borderColor='#FE647E';" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.2)';">−</button>
+            <span id="labelQtyDisplay" style="min-width:20px;text-align:center;font-size:1rem;font-weight:600;color:#fff;">0</span>
+            <button onclick="changeLabelQty(1)" style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#e0e0e0;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,107,157,0.15)';this.style.borderColor='#FE647E';" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.2)';">＋</button>
+        </div>
+    `;
+    optBox.appendChild(labelRow);
+
+    // 쇼핑백 수량 선택 UI
+    const bagRow = document.createElement('div');
+    bagRow.className = 'toggle-row';
+    bagRow.style.cssText = 'align-items:center;';
+    bagRow.innerHTML = `
+        <div style="flex:1; padding-right:0.5rem;">
+            <div class="toggle-label">쇼핑백 디자인</div>
+            <div class="toggle-desc">구매 및 선물용 패키지로서의 브랜드 가치를 전달 · 1종 ₩ 200,000 / 추가 1종당 +₩ 50,000</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
+            <button onclick="changeBagQty(-1)" style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#e0e0e0;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,107,157,0.15)';this.style.borderColor='#FE647E';" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.2)';">−</button>
+            <span id="bagQtyDisplay" style="min-width:20px;text-align:center;font-size:1rem;font-weight:600;color:#fff;">0</span>
+            <button onclick="changeBagQty(1)" style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#e0e0e0;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,107,157,0.15)';this.style.borderColor='#FE647E';" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.2)';">＋</button>
+        </div>
+    `;
+    optBox.appendChild(bagRow);
+
+    // 아웃박스(택배박스) 수량 선택 UI
+    const outboxRow = document.createElement('div');
+    outboxRow.className = 'toggle-row';
+    outboxRow.style.cssText = 'align-items:center;';
+    outboxRow.innerHTML = `
+        <div style="flex:1; padding-right:0.5rem;">
+            <div class="toggle-label">아웃박스 (택배박스) 디자인</div>
+            <div class="toggle-desc">배송용 택배박스 외부 디자인 · 1종 ₩ 100,000 / 추가 1종당 +₩ 50,000</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
+            <button onclick="changeOutboxQty(-1)" style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#e0e0e0;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,107,157,0.15)';this.style.borderColor='#FE647E';" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.2)';">−</button>
+            <span id="outboxQtyDisplay" style="min-width:20px;text-align:center;font-size:1rem;font-weight:600;color:#fff;">0</span>
+            <button onclick="changeOutboxQty(1)" style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:#e0e0e0;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,107,157,0.15)';this.style.borderColor='#FE647E';" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.2)';">＋</button>
+        </div>
+    `;
+    optBox.appendChild(outboxRow);
+
+    render();
+}
+
+// 체크박스 토글
+function toggleChk(label) {
+    const cb = label.querySelector('input');
+    if (cb.checked) label.classList.add('on');
+    else label.classList.remove('on');
+}
+
+// 스위치 토글
+function toggleSwitch(key) {
+    state[key] = !state[key];
+    const sw = document.getElementById(key + 'Switch');
+    sw.classList.toggle('on', state[key]);
+    render();
+}
+
+function toggleOption(id) {
+    state.options[id] = !state.options[id];
+    const sw = document.getElementById('optSwitch-' + id);
+    sw.classList.toggle('on', state.options[id]);
+    render();
+}
+
+function changeLabelQty(delta) {
+    state.labelQty = Math.max(0, state.labelQty + delta);
+    document.getElementById('labelQtyDisplay').textContent = state.labelQty;
+    render();
+}
+
+function changeBagQty(delta) {
+    state.bagQty = Math.max(0, state.bagQty + delta);
+    document.getElementById('bagQtyDisplay').textContent = state.bagQty;
+    render();
+}
+
+function changeOutboxQty(delta) {
+    state.outboxQty = Math.max(0, state.outboxQty + delta);
+    document.getElementById('outboxQtyDisplay').textContent = state.outboxQty;
+    render();
+}
+
+// 시리즈 추가/삭제
+function addSeries() {
+    state.series = true;
+    document.getElementById('seriesBlock').style.display = 'block';
+    document.getElementById('seriesAddBtn').style.display = 'none';
+    renderSeriesItems();
+}
+
+function removeSeries() {
+    state.series = false;
+    document.getElementById('seriesBlock').style.display = 'none';
+    document.getElementById('seriesAddBtn').style.display = 'block';
+    render();
+}
+
+function renderSeriesItems() {
+    const qty = parseInt(document.getElementById('seriesQty').value);
+    const list = document.getElementById('seriesItemList');
+
+    if (!qty || qty === 0) {
+        list.innerHTML = '';
+        render();
+        return;
+    }
+
+    // 기존 입력값 보존
+    const prev = [];
+    list.querySelectorAll('.series-item').forEach(card => {
+        prev.push({
+            name: card.querySelector('.si-name')?.value || '',
+            container: card.querySelector('input[type="radio"][name^="si-c-"]:checked')?.value || '',
+            box: card.querySelector('input[type="radio"][name^="si-b-"]:checked')?.value || ''
+        });
+    });
+
+    list.innerHTML = '';
+
+    for (let i = 0; i < qty; i++) {
+        const saved = prev[i] || {};
+        const card = document.createElement('div');
+        card.className = 'series-item opt-card';
+        card.style.marginBottom = '0.75rem';
+
+        const containerOpts = [
+            { v: '병', t: '병' },
+            { v: '튜브', t: '튜브' },
+            { v: '크림자', t: '크림자' },
+            { v: '파우치', t: '파우치' }
+        ].map(o => {
+            const sel = saved.container === o.v ? 'checked' : '';
+            const on  = saved.container === o.v ? ' on' : '';
+            return `<label class="chk${on}" onclick="selectOneRadio('si-c-${i}', this)">
+                <input type="radio" name="si-c-${i}" value="${o.v}" ${sel} onchange="render()"><span class="radio-dot"></span> ${o.t}
+            </label>`;
+        }).join('');
+
+        const boxOpts = [
+            { v: '단상자', t: '단상자' },
+            { v: '싸바리 박스', t: '싸바리 박스' },
+            { v: '상하박스', t: '상하박스' },
+            { v: 'none', t: '없음' }
+        ].map(o => {
+            const sel = saved.box === o.v ? 'checked' : '';
+            const on  = saved.box === o.v ? ' on' : '';
+            return `<label class="chk${on}" onclick="selectOneRadio('si-b-${i}', this)">
+                <input type="radio" name="si-b-${i}" value="${o.v}" ${sel} onchange="render()"><span class="radio-dot"></span> ${o.t}
+            </label>`;
+        }).join('');
+
+        card.innerHTML = `
+            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.7rem;">
+                <span style="font-size:0.72rem; color:#FF96A6; min-width:20px; font-weight:600;">${String(i + 1).padStart(2, '0')}</span>
+                <input type="text" class="si-name" id="sName-${i}" placeholder="제품명"
+                    value="${saved.name || ''}"
+                    style="flex:1; padding:0.5rem 0.65rem; background:#f0f0f0; background-color:#f0f0f0; border:1px solid #ddd; border-radius:5px; color:#1a1a1a; font-family:'Pretendard',sans-serif; font-size:0.82rem; -webkit-appearance:none; -webkit-text-fill-color:#1a1a1a; color-scheme:light; outline:none;"
+                    placeholder="제품명"
+                    oninput="render()">
+            </div>
+            <div class="chk-group-label">용기</div>
+            <div class="chk-row" style="margin:0 0 0.6rem 0; padding:0.4rem 0.5rem;">
+                ${containerOpts}
+            </div>
+            <div class="chk-group-label">박스</div>
+            <div class="chk-row" style="margin:0; padding:0.4rem 0.5rem;">
+                ${boxOpts}
+            </div>
+        `;
+        list.appendChild(card);
+    }
+    render();
+}
+
+// radio 단일 선택 (name 기반 — id 없이)
+function selectOneRadio(radioName, clickedLabel) {
+    document.querySelectorAll(`input[name="${radioName}"]`).forEach(r => {
+        const lbl = r.closest('label');
+        if (lbl) lbl.classList.remove('on');
+    });
+    const radio = clickedLabel.querySelector('input[type="radio"]');
+    if (radio) clickedLabel.classList.add('on');
+    render();
+}
+
+// 포맷
+function fmt(n) { const v = parseInt(n) || 0; return '₩ ' + v.toLocaleString('ko-KR'); }
+
+// 메인 구성 추출
+// radio 그룹에서 하나만 선택 — 시각적 on 클래스 처리
+function selectOne(groupId, clickedLabel) {
+    const row = document.getElementById(groupId);
+    if (!row) return;
+    row.querySelectorAll('label').forEach(l => l.classList.remove('on'));
+    const radio = clickedLabel.querySelector('input[type="radio"]');
+    if (radio) clickedLabel.classList.add('on');
+    render();
+}
+
+// 구성 항목 수집 — radio value에서 직접 읽기
+function getConfig(prefix) {
+    const p = prefix === 'main' ? 'm' : 's';
+    const items = [];
+
+    // 용기 — radio 단일 선택
+    const containerEl = document.querySelector(`input[name="${p}-container"]:checked`);
+    if (containerEl && containerEl.value && containerEl.value !== 'undefined') {
+        items.push({ type: 'container', label: containerEl.value });
+    }
+
+    // 박스 — radio 단일 선택
+    const boxEl = document.querySelector(`input[name="${p}-box"]:checked`);
+    if (boxEl && boxEl.value && boxEl.value !== 'undefined' && boxEl.value !== 'none') {
+        items.push({ type: 'box', label: boxEl.value });
+    }
+
+    return items;
+}
+
+function getMainConfig()   { return getConfig('main'); }
+function getSeriesConfig() { return getConfig('series'); }
+
+// toggleBoxSub — radio 방식에서는 불필요하나 호환성 유지
+function toggleBoxSub() {}
+
+// 메인 렌더
+function render() {
+    // 헤더 정보
+    const today = new Date();
+    const dateFmt = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+    const dDateEl = document.getElementById('dDate'); if(dDateEl) dDateEl.textContent = dateFmt;
+    document.getElementById('dFromDate').textContent = dateFmt;
+
+    // 클라이언트 정보
+    document.getElementById('dCompany').textContent = document.getElementById('company').value || '—';
+    const contact = document.getElementById('contact').value;
+    document.getElementById('dContact').textContent = contact ? contact + ' 님' : '—';
+    document.getElementById('dPhone').textContent = document.getElementById('phone').value || '—';
+    document.getElementById('dEmail').textContent = document.getElementById('email').value || '—';
+    document.getElementById('dProject').textContent = document.getElementById('project').value || '—';
+
+    // 브랜드 컨셉 / 메모
+    const briefVal = document.getElementById('brief').value.trim();
+    const briefBox = document.getElementById('dBriefBox');
+    const briefText = document.getElementById('dBrief');
+    if (briefBox && briefText) {
+        briefText.textContent = briefVal;
+        briefBox.style.display = briefVal ? 'block' : 'none';
+    }
+
+    // 작업 조건
+    document.getElementById('dWorkdays').textContent = document.getElementById('workdays').value || '—';
+    document.getElementById('dDrafts').textContent = document.getElementById('drafts').value || '—';
+    document.getElementById('dRevisions').textContent = document.getElementById('revisions').value || '—';
+    document.getElementById('dExtraRev').textContent = document.getElementById('extraRev').value || '—';
+
+    // 유효기간 (고정 14일)
+    document.getElementById('dValid').textContent = `본 견적은 발행일로부터 14일간 유효합니다.`;
+
+    // 견적 항목 빌드
+    const tbody = document.getElementById('qBody');
+    tbody.innerHTML = '';
+    let subtotal = 0;
+    let no = 1;
+    quoteSnapshot.items = []; // 스냅샷 초기화
+
+    // 1. 메인 품목
+    const mainName = document.getElementById('mainName').value || '메인';
+    const mainConfig = getMainConfig();
+    const mainBase = parseInt(document.getElementById('mainAmount').value) || 0;
+    const mainBoxVal = document.querySelector('input[name="m-box"]:checked')?.value || '';
+    const mainBoxSurcharge = (mainBoxVal === '싸바리 박스' || mainBoxVal === '상하박스') ? 100000 : 0;
+    const mainBoxDiscount = (mainBoxVal === 'none') ? 200000 : 0;
+    const mainContainerVal = document.querySelector('input[name="m-container"]:checked')?.value || '';
+    const mainContainerSurcharge = (mainContainerVal === '파우치') ? 100000 : 0;
+    const mainAmount = mainBase + mainBoxSurcharge + mainContainerSurcharge - mainBoxDiscount;
+
+    // 메인 구성이 하나라도 선택됐을 때만 시리즈 버튼 노출
+    const hasMain = mainConfig.length > 0 && mainAmount > 0;
+    const seriesAddBtn = document.getElementById('seriesAddBtn');
+    const seriesBlock = document.getElementById('seriesBlock');
+    const techSection = document.getElementById('techSection');
+    if (!hasMain) {
+        seriesAddBtn.style.display = 'none';
+        seriesBlock.style.display = 'none';
+        techSection.style.display = 'none';
+        state.series = false;
+        state.tech = false;
+        document.getElementById('techSwitch').classList.remove('on');
+    } else {
+        if (!state.series) seriesAddBtn.style.display = 'block';
+        techSection.style.display = 'block';
+    }
+
+    if (mainConfig.length > 0 && mainAmount > 0) {
+        const detailLines = [
+            ...mainConfig.map(({ type, label }) => {
+                if (type === 'container') {
+                    return label === '파우치' ? `${mainName} ${label} 패키지` : `${mainName} ${label} 용기 패키지`;
+                }
+                return `${mainName} ${label} 패키지`;
+            }),
+            '브랜드 미션/가치/디자인 컨셉 정의',
+            '라인 확장을 고려한 디자인 시스템',
+            '후가공 사양(박, 형압 등) 및 디자인 적용 3D 목업 이미지'
+        ];
+
+        tbody.innerHTML += `
+            <tr>
+                <td class="cell-no">${no}</td>
+                <td class="cell-cat">메인 패키지 디자인</td>
+                <td>${detailLines.map(l => `<div class="detail-line">${l}</div>`).join('')}</td>
+                <td class="cell-amt">${fmt(mainAmount)}</td>
+            </tr>
+        `;
+        subtotal += mainAmount;
+        quoteSnapshot.items.push({ name: '메인 패키지 디자인', amount: mainAmount, details: detailLines });
+        no++;
+    }
+
+    // 2. 시리즈 라인
+    if (state.series) {
+        const qty = parseInt(document.getElementById('seriesQty').value) || 0;
+        const unitBase = parseInt(document.getElementById('seriesUnit').value) || 0;
+
+        if (qty > 0 && unitBase > 0) {
+            // 모든 시리즈 행을 수집
+            const seriesRows = [];
+            for (let i = 0; i < qty; i++) {
+                const nameEl = document.getElementById(`sName-${i}`);
+                const name = nameEl && nameEl.value ? nameEl.value : `시리즈 ${i + 1}`;
+                const containerEl = document.querySelector(`input[name="si-c-${i}"]:checked`);
+                const boxEl = document.querySelector(`input[name="si-b-${i}"]:checked`);
+                const boxVal = boxEl?.value || '';
+                const boxSurcharge = (boxVal === '싸바리 박스' || boxVal === '상하박스') ? 100000 : 0;
+                const boxDiscount = (boxEl && boxVal === 'none') ? 100000 : 0;
+                const containerVal = containerEl?.value || '';
+                const containerSurcharge = (containerVal === '파우치') ? 100000 : 0;
+                const rowPrice = unitBase + boxSurcharge + containerSurcharge - boxDiscount;
+                const lines = [];
+                if (containerEl && containerEl.value && containerEl.value !== 'undefined') lines.push(`${name} ${containerEl.value}${containerEl.value === '파우치' ? '' : ' 용기'} 패키지`);
+                if (boxEl && boxEl.value && boxEl.value !== 'undefined' && boxEl.value !== 'none') lines.push(`${name} ${boxEl.value} 패키지`);
+                if (lines.length === 0) lines.push(`${name} 패키지`);
+                lines.push('인쇄 도안 레이아웃 최적화 / 후가공 사양 및 디자인 적용 3D 목업 이미지');
+                seriesRows.push({ no: no + i, lines, price: rowPrice });
+            }
+
+            // 항목 컬럼 — 첫 행에만 표시, rowspan 제거
+            seriesRows.forEach((row, i) => {
+                const isFirst = i === 0;
+                const isLast = i === seriesRows.length - 1;
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="cell-no">${row.no}</td>
+                        <td class="cell-cat" style="vertical-align:top;">${isFirst ? '베리에이션<br>패키지 디자인' : ''}</td>
+                        <td>${row.lines.map(l => `<div class="detail-line">${l}</div>`).join('')}</td>
+                        <td class="cell-amt">${fmt(row.price)}</td>
+                    </tr>
+                `;
+            });
+
+            const seriesTotalAmt = seriesRows.reduce((acc, r) => acc + r.price, 0);
+            subtotal += seriesTotalAmt;
+            quoteSnapshot.items.push({
+                name: `베리에이션 패키지 디자인 × ${qty}`,
+                amount: seriesTotalAmt,
+                details: seriesRows.map((row, i) => `시리즈 ${i + 1}: ${row.lines.join(', ')}`)
+            });
+            no += qty;
+        }
+    }
+
+    // 3. 용기 사양 컨설팅
+    if (state.tech) {
+        const techAmount = 300000;
+        tbody.innerHTML += `
+            <tr>
+                <td class="cell-no">${no}</td>
+                <td class="cell-cat">용기 사양 컨설팅</td>
+                <td>
+                    <div class="detail-line" style="font-weight:700;">[프로젝트 전 품목 통합 적용]</div>
+                    <div class="detail-line">용기 자체의 컬러 및 후가공 (박 / 증착 / 코팅 등) 제안</div>
+                    <div class="detail-line">용기 재질감과 컬러를 반영한 3D 이미지 제안</div>
+                    <div class="detail-line">용기 후가공 사양서 작성</div>
+                </td>
+                <td class="cell-amt">${fmt(techAmount)}</td>
+            </tr>
+        `;
+        subtotal += techAmount;
+        quoteSnapshot.items.push({
+            name: '용기 사양 컨설팅',
+            amount: techAmount,
+            details: ['[프로젝트 전 품목 통합 적용]', '용기 자체의 컬러 및 후가공 (박 / 증착 / 코팅 등) 제안', '용기 재질감과 컬러를 반영한 3D 이미지 제안', '용기 후가공 사양서 작성']
+        });
+        no++;
+    }
+
+    // 4. 스티커
+    if (state.labelQty > 0) {
+        const labelAmt = state.labelQty * 50000;
+        tbody.innerHTML += `
+            <tr>
+                <td class="cell-no">${no}</td>
+                <td class="cell-cat">개봉 방지/봉인 스티커</td>
+                <td><div class="detail-line">버진 씰(Virgin Seal) / 개봉 방지용 스티커 디자인 × ${state.labelQty}종</div></td>
+                <td class="cell-amt">${fmt(labelAmt)}</td>
+            </tr>
+        `;
+        subtotal += labelAmt;
+        quoteSnapshot.items.push({ name: `개봉 방지/봉인 스티커 × ${state.labelQty}종`, amount: labelAmt, details: [`버진 씰(Virgin Seal) / 개봉 방지용 스티커 디자인 × ${state.labelQty}종`] });
+        no++;
+    }
+
+    // 5. 쇼핑백
+    if (state.bagQty > 0) {
+        const bagAmt = 200000 + (state.bagQty - 1) * 50000;
+        tbody.innerHTML += `
+            <tr>
+                <td class="cell-no">${no}</td>
+                <td class="cell-cat">쇼핑백 디자인</td>
+                <td><div class="detail-line">구매 및 선물용 쇼핑백 디자인 × ${state.bagQty}종</div></td>
+                <td class="cell-amt">${fmt(bagAmt)}</td>
+            </tr>
+        `;
+        subtotal += bagAmt;
+        quoteSnapshot.items.push({ name: `쇼핑백 디자인 × ${state.bagQty}종`, amount: bagAmt, details: [`구매 및 선물용 쇼핑백 디자인 × ${state.bagQty}종`] });
+        no++;
+    }
+
+    // 6. 아웃박스
+    if (state.outboxQty > 0) {
+        const outboxAmt = 100000 + (state.outboxQty - 1) * 50000;
+        tbody.innerHTML += `
+            <tr>
+                <td class="cell-no">${no}</td>
+                <td class="cell-cat">아웃박스 디자인</td>
+                <td><div class="detail-line">배송용 택배박스 외부 디자인 × ${state.outboxQty}종</div></td>
+                <td class="cell-amt">${fmt(outboxAmt)}</td>
+            </tr>
+        `;
+        subtotal += outboxAmt;
+        quoteSnapshot.items.push({ name: `아웃박스 디자인 × ${state.outboxQty}종`, amount: outboxAmt, details: [`배송용 택배박스 외부 디자인 × ${state.outboxQty}종`] });
+        no++;
+    }
+
+
+
+    // 합계 계산
+    const discountRate = parseInt(document.getElementById('discountRate').value) || 0;
+    const discount = Math.round(subtotal * discountRate / 100);
+    const afterDiscount = subtotal - discount;
+    const vat = Math.round(afterDiscount * 0.1);
+    const total = afterDiscount + vat;
+
+    document.getElementById('tSub').textContent = fmt(subtotal);
+
+    if (discount > 0) {
+        const reason = document.getElementById('discountReason').value;
+        document.getElementById('tDiscRow').style.display = 'flex';
+        document.getElementById('tDiscLabel').textContent = `할인 ${discountRate}%${reason ? ' · ' + reason : ''}`;
+        document.getElementById('tDisc').textContent = '- ' + fmt(discount);
+    } else {
+        document.getElementById('tDiscRow').style.display = 'none';
+    }
+
+    document.getElementById('tVat').textContent = fmt(vat);
+    document.getElementById('tTotal').textContent = fmt(total);
+
+    // 행 수 10개 이상이면 compact 모드
+    const table = document.querySelector('.q-table');
+    const rowCount = tbody.querySelectorAll('tr').length;
+    if (rowCount >= 14) {
+        table.classList.add('compact');
+    } else {
+        table.classList.remove('compact');
+    }
+
+    // 스냅샷 금액 갱신
+    quoteSnapshot.subtotal = subtotal;
+    quoteSnapshot.discount = discount;
+    quoteSnapshot.vat = vat;
+    quoteSnapshot.total = total;
+}
+
+// PDF 미리보기 — 자동 축소 + 작업조건/약관은 2페이지 분리
+function openPdfPreview() {
+    const modal = document.getElementById('pdfModal');
+    const container = document.getElementById('pdfPageContainer');
+    container.innerHTML = '';
+
+    const pageWidth = 800;
+    const pageHeight = Math.round(pageWidth * 297 / 210); // ≈ 1131px
+    // pdf-page CSS: padding: 36px 44px 44px (top, side, bottom)
+    const PAGE_PT = 36;  // 상단 패딩
+    const PAGE_PB = 44;  // 하단 패딩
+    const PAGE_PX = 44;  // 좌우 패딩
+    // pdf-page-footer: bottom:28px, font-size:9~10px → 실제 차지 ≒ 18px + 여유
+    // 콘텐츠 영역이 footer를 침범하지 않도록 안전 마진 포함
+    const FOOTER_RESERVED = 38;
+    const usableHeight = pageHeight - PAGE_PT - PAGE_PB - FOOTER_RESERVED;
+
+    const docOrigin = document.getElementById('doc');
+
+    // 자식 노드를 메인 그룹 / 브레이크 그룹으로 분리
+    const allChildren = Array.from(docOrigin.children);
+    const mainNodes = [];
+    const breakNodes = [];
+    let hitBreak = false;
+    allChildren.forEach(child => {
+        if (child.classList && child.classList.contains('doc-section-break')) {
+            hitBreak = true;
+        }
+        if (hitBreak) breakNodes.push(child);
+        else mainNodes.push(child);
+    });
+
+    // 항목 수에 따른 셀 패딩/행간
+    function calcCellPadding(rowCount) {
+        if (rowCount <= 1)  return { pv: 80,  lh: '3.5'  };
+        if (rowCount <= 2)  return { pv: 55,  lh: '2.4'  };
+        if (rowCount <= 3)  return { pv: 38,  lh: '2.0'  };
+        if (rowCount <= 4)  return { pv: 22,  lh: '1.8'  };
+        if (rowCount <= 5)  return { pv:  8,  lh: '1.40' };
+        if (rowCount <= 6)  return { pv:  5,  lh: '1.25' };
+        if (rowCount <= 7)  return { pv:  3,  lh: '1.15' };
+        if (rowCount <= 8)  return { pv:  1,  lh: '1.05' };
+        if (rowCount <= 10) return { pv:  0,  lh: '1.00' };
+        if (rowCount <= 13) return { pv:  0,  lh: '0.95' };
+        return                     { pv:  0,  lh: '0.90' };
+    }
+
+    // 합계/total-line 압축
+    function calcTotalsCompression(rowCount) {
+        if (rowCount >= 9)  return { marginTop: '2px',  linePad: '2px' };
+        if (rowCount >= 7)  return { marginTop: '4px',  linePad: '3px' };
+        if (rowCount >= 5)  return { marginTop: '8px',  linePad: '5px' };
+        if (rowCount <= 3)  return { marginTop: '20px', linePad: null  };
+        return                     { marginTop: '12px', linePad: null  };
+    }
+
+    // 페이지에 makePage와 동일한 변형 적용 (probe와 실제가 정확히 일치하도록 분리)
+    function applyPageTransforms(page, cfg, isMainPage) {
+        // 토글 강제 표시
+        page.querySelectorAll('.doc-toggle-body').forEach(b => b.style.display = 'block');
+        page.querySelectorAll('.doc-toggle-title').forEach(t => {
+            t.classList.add('open');
+            t.style.marginBottom = '14px';
+        });
+
+        if (isMainPage) {
+            const tbody = page.querySelector('.q-table tbody');
+            if (tbody) {
+                const rows = tbody.querySelectorAll('tr');
+                const rowCount = rows.length;
+                const { pv: cpv, lh: clh } = calcCellPadding(rowCount);
+                rows.forEach(tr => tr.querySelectorAll('td').forEach(td => {
+                    td.style.setProperty('padding-top', cpv + 'px', 'important');
+                    td.style.setProperty('padding-bottom', cpv + 'px', 'important');
+                    td.style.setProperty('line-height', clh, 'important');
+                    td.style.setProperty('vertical-align', 'middle', 'important');
+                }));
+
+                // thead 패딩도 압축
+                if (rowCount >= 8) {
+                    page.querySelectorAll('.q-table thead th').forEach(th => {
+                        th.style.setProperty('padding-top', '4px', 'important');
+                        th.style.setProperty('padding-bottom', '4px', 'important');
+                    });
+                }
+
+                const totals = page.querySelector('.totals');
+                if (totals) {
+                    const tc = calcTotalsCompression(rowCount);
+                    totals.style.marginTop = tc.marginTop;
+                    if (tc.linePad) {
+                        totals.querySelectorAll('.total-line').forEach(tl => {
+                            tl.style.setProperty('padding-top', tc.linePad, 'important');
+                            tl.style.setProperty('padding-bottom', tc.linePad, 'important');
+                        });
+                    }
+                }
+
+                // 8개 이상: 상단 info-block / doc-top 마진도 압축
+                if (rowCount >= 8) {
+                    const infoBlock = page.querySelector('.info-block');
+                    if (infoBlock) infoBlock.style.setProperty('margin-bottom', '8px', 'important');
+                    const docTop = page.querySelector('.doc-top');
+                    if (docTop) docTop.style.setProperty('margin-bottom', '8px', 'important');
+                    const briefBox = page.querySelector('.brief-box');
+                    if (briefBox) briefBox.style.setProperty('margin-bottom', '6px', 'important');
+                }
+            }
+        }
+
+        // detail 열 너비 + nowrap
+        const colDetail = page.querySelector('.col-detail');
+        const colCat    = page.querySelector('.col-cat');
+        const colAmt    = page.querySelector('.col-amt');
+        const colNo     = page.querySelector('.col-no');
+        if (colDetail) {
+            colNo.style.width     = '5%';
+            colCat.style.width    = '13%';
+            colDetail.style.width = '65%';
+            colAmt.style.width    = '17%';
+        }
+        page.querySelectorAll('.detail-line').forEach(dl => {
+            const t = dl.textContent.trim();
+            if (t === '라인 확장을 고려한 디자인 시스템 설계 / 인쇄 도안 레이아웃 및 후가공 사양(박, 형압 등) 제안') {
+                dl.style.setProperty('white-space', 'nowrap', 'important');
+            }
+        });
+    }
+
+    // probe로 높이 측정 — makePage와 동일한 변형 적용 후 측정
+    function buildProbe(nodes, cfg, isMainPage) {
+        const probe = document.createElement('div');
+        probe.className = 'pdf-page';
+        probe.style.cssText = `
+            position:absolute; visibility:hidden; left:-9999px;
+            width:${pageWidth}px; height:auto; aspect-ratio:unset;
+            padding:${PAGE_PT}px ${PAGE_PX}px ${PAGE_PB}px;
+            box-sizing:border-box;
+            font-size:${cfg.fs}px; line-height:${cfg.lh};
+        `;
+        nodes.forEach(n => {
+            if (!n.classList || !n.classList.contains('doc-footer')) {
+                const clone = n.cloneNode(true);
+                probe.appendChild(clone);
+            }
+        });
+        document.body.appendChild(probe);
+        applyPageTransforms(probe, cfg, isMainPage);
+        // 콘텐츠 실제 높이 = probe.scrollHeight - 패딩 (콘텐츠 영역만)
+        const contentHeight = probe.scrollHeight - PAGE_PT - PAGE_PB;
+        document.body.removeChild(probe);
+        return contentHeight;
+    }
+
+    // 폰트/행간 단계 — 기본 단계 + 비상 압축 단계
+    const previewRowCount = (function() {
+        const tb = document.getElementById('qBody');
+        return tb ? tb.querySelectorAll('tr').length : 0;
+    })();
+    const configsFull = [
+        { fs: 13,  lh: 1.60 },
+        { fs: 12,  lh: 1.55 },
+        { fs: 11,  lh: 1.50 },
+        { fs: 10,  lh: 1.45 },
+        { fs: 9.5, lh: 1.40 },
+        { fs: 9,   lh: 1.35 },
+        { fs: 8.5, lh: 1.30 },
+        { fs: 8,   lh: 1.25 },
+        { fs: 7.5, lh: 1.20 },
+        { fs: 7,   lh: 1.15 },
+        { fs: 6.5, lh: 1.10 },
+        { fs: 6,   lh: 1.05 },
+        { fs: 5.5, lh: 1.00 },
+    ];
+    // 항목 많으면 작은 폰트부터 탐색 (속도 + 공간 확보)
+    const configs = previewRowCount >= 10 ? configsFull.filter(c => c.fs <= 8)
+                  : previewRowCount >= 8  ? configsFull.filter(c => c.fs <= 9)
+                  : previewRowCount >= 6  ? configsFull.filter(c => c.fs <= 11)
+                  : configsFull;
+
+    let chosen = configs[configs.length - 1];
+    for (const cfg of configs) {
+        const h = buildProbe(mainNodes, cfg, true);
+        if (h <= usableHeight) { chosen = cfg; break; }
+    }
+
+    function makePage(nodes, cfg, pageIdx, totalPages) {
+        const page = document.createElement('div');
+        page.className = 'pdf-page';
+        page.style.cssText = `font-size:${cfg.fs}px !important; line-height:${cfg.lh} !important; padding:${PAGE_PT}px ${PAGE_PX}px ${PAGE_PB}px !important;`;
+        
+        // 2페이지부터는 헤더(로고 + 제목) 추가
+        if (pageIdx > 1) {
+            const header = document.createElement('div');
+            header.className = 'doc-top';
+            
+            const originalTop = document.getElementById('doc').querySelector('.doc-top');
+            const brandClone = originalTop.querySelector('.brand').cloneNode(true);
+            
+            const titleWrap = document.createElement('div');
+            titleWrap.className = 'doc-title-wrap';
+            const title = document.createElement('div');
+            title.className = 'doc-title';
+            title.textContent = '디자인 프로세스';
+            titleWrap.appendChild(title);
+            
+            header.appendChild(brandClone);
+            header.appendChild(titleWrap);
+            page.appendChild(header);
+        }
+        
+        // 모든 노드를 순서대로 추가 (푸터 제외)
+        nodes.forEach(n => {
+            if (!n.classList || !n.classList.contains('doc-footer')) {
+                const clone = n.cloneNode(true);
+                page.appendChild(clone);
+            }
+        });
+
+        // probe와 동일한 변형 적용
+        applyPageTransforms(page, cfg, pageIdx === 1);
+
+        // 새로운 푸터 - 좌/중/우 3단 구조
+        const footer = document.createElement('div');
+        footer.className = 'pdf-page-footer';
+        footer.innerHTML = `
+            <div class="pdf-footer-left">화장품 패키지 · BI 디자인 전문_페르수스입니다.</div>
+            <div class="pdf-footer-center">— ${pageIdx} / ${totalPages} —</div>
+            <div class="pdf-footer-right">www.persus.co.kr</div>
+        `;
+        page.appendChild(footer);
+        
+        return page;
+    }
+
+    const totalPages = breakNodes.length > 0 ? 2 : 1;
+
+    // 1페이지
+    const wrap1 = document.createElement('div');
+    wrap1.style.cssText = 'position:relative; margin-bottom:2.5rem;';
+    const tag1 = document.createElement('div');
+    tag1.className = 'page-tag';
+    tag1.textContent = `Page 1 of ${totalPages} · 폰트 ${chosen.fs}px 자동 조정`;
+    wrap1.appendChild(tag1);
+    wrap1.appendChild(makePage(mainNodes, chosen, 1, totalPages));
+    container.appendChild(wrap1);
+
+    // 2페이지 (작업조건+약관)
+    if (breakNodes.length > 0) {
+        const wrap2 = document.createElement('div');
+        wrap2.style.cssText = 'position:relative; margin-bottom:2.5rem;';
+        const tag2 = document.createElement('div');
+        tag2.className = 'page-tag';
+        tag2.textContent = `Page 2 of ${totalPages}`;
+        wrap2.appendChild(tag2);
+        wrap2.appendChild(makePage(breakNodes, chosen, 2, totalPages));
+        container.appendChild(wrap2);
+    }
+
+    document.getElementById('pageCount').textContent = totalPages;
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closePdfPreview() {
+    document.getElementById('pdfModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// ESC로 닫기
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closePdfPreview();
+});
+
+// PDF 다운로드 — 화면 환경(모바일/PC)과 무관하게 항상 A4 PC 기준으로 생성
+async function downloadPDF() {
+    const company = document.getElementById('company').value || '페르수스';
+    const project = document.getElementById('project').value || '견적서';
+    const today = new Date();
+    const dateStr = `${String(today.getFullYear()).slice(2)}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+    const filename = `${dateStr}_${company}_${project}_견적서_페르수스.pdf`;
+
+    // 미리보기 모달이 열려있지 않으면 잠시 열어 .pdf-page 노드를 생성
+    const modal = document.getElementById('pdfModal');
+    const wasOpen = modal.classList.contains('active');
+    if (!wasOpen) openPdfPreview();
+
+    const container = document.getElementById('pdfPageContainer');
+    const pages = container.querySelectorAll('.pdf-page');
+
+    if (pages.length === 0) {
+        if (!wasOpen) closePdfPreview();
+        return;
+    }
+
+    // 다운로드 중 인디케이터 표시
+    const info = document.getElementById('pdfModalInfo');
+    const originalInfo = info.innerHTML;
+    info.innerHTML = '<span style="color:#FF96A6;">PDF 생성 중... 잠시만 기다려주세요</span>';
+
+    // 모바일에서 컨테이너에 걸린 transform: scale을 캡처 시점에만 임시 해제
+    // (transform이 걸려 있으면 html2canvas가 축소된 상태로 캡처하므로 반드시 제거)
+    const prevTransform = container.style.transform;
+    const prevMargin = container.style.marginBottom;
+    container.style.transform = 'none';
+    container.style.marginBottom = '2rem';
+
+    try {
+        // jsPDF 인스턴스 생성 — A4 세로
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+
+            // windowWidth를 PC 기준(1280)으로 강제 → 모바일에서도 PC 미디어쿼리 기준으로 캡처
+            const canvas = await html2canvas(page, {
+                scale: 4,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                width: 800,
+                height: 1131,
+                windowWidth: 1280,
+                windowHeight: 1131
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            if (i > 0) pdf.addPage();
+            // A4: 210 x 297mm
+            pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+        }
+
+        pdf.save(filename);
+
+        // Formspree 자동 전송 — 테스트 중이므로 임시 비활성화
+        // TODO: 최종 완성 후 주석 해제
+        /*
+        if (document.getElementById('agreeConsent')?.checked) {
+            sendQuoteToOwner(pdf, filename).catch(err => {
+                console.error('자동 전송 실패:', err);
+                alert('견적서 다운로드는 완료됐습니다.\n단, 페르수스 사본 전송에 실패했습니다.\n견적 문의는 persus24@naver.com 으로 직접 보내주세요.');
+            });
+        }
+        */
+    } catch (err) {
+        alert('PDF 생성 중 오류가 발생했습니다: ' + err.message);
+        console.error(err);
+    } finally {
+        // 원래 transform 복원
+        container.style.transform = prevTransform;
+        container.style.marginBottom = prevMargin;
+        info.innerHTML = originalInfo;
+        if (!wasOpen) closePdfPreview();
+    }
+}
+
+// =====================================================
+// 다운로드 요청 핸들러 — 동의/연락처 검증 후 downloadPDF 호출
+// =====================================================
+function handleDownloadRequest() {
+    // 1) 동의 체크 검증
+    const consent = document.getElementById('agreeConsent');
+    if (!consent || !consent.checked) {
+        alert('개인정보 활용 동의 체크 후 다운로드해주세요.');
+        // 동의 박스로 스크롤
+        consent?.closest('.consent-row')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+
+    // 2) 필수 정보 검증 — 회사명 + 담당자 + (연락처 또는 이메일)
+    const company = document.getElementById('company').value.trim();
+    const contact = document.getElementById('contact').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const email = document.getElementById('email').value.trim();
+
+    const missing = [];
+    if (!company) missing.push('회사명');
+    if (!contact) missing.push('담당자');
+    if (!phone && !email) missing.push('연락처 또는 이메일');
+
+    if (missing.length > 0) {
+        alert(`다음 항목을 입력해주세요:\n\n• ${missing.join('\n• ')}\n\n견적서 전달을 위해 최소한의 연락 정보가 필요합니다.`);
+        // 첫 미입력 필드로 포커스
+        const firstMissingId = !company ? 'company' : !contact ? 'contact' : 'phone';
+        const el = document.getElementById(firstMissingId);
+        if (el) {
+            el.focus();
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+    }
+
+    // 검증 통과 → 다운로드 실행
+    downloadPDF();
+}
+
+// =====================================================
+// Formspree 자동 전송 — 페르수스 메일로 사본 발송
+// =====================================================
+// 사용 전 https://formspree.io 가입 후 폼 ID 발급받아 아래 상수 교체 필요
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xzdovbza';
+
+async function sendQuoteToOwner(pdfDoc, filename) {
+    const company = document.getElementById('company').value.trim();
+    const contact = document.getElementById('contact').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const project = document.getElementById('project').value.trim();
+    const brief = document.getElementById('brief').value.trim();
+
+    // quoteSnapshot에서 직접 가져옴 (DOM 파싱 없이 중복/오파싱 없음)
+    const itemList = quoteSnapshot.items.map((item, i) => {
+        const detailStr = item.details && item.details.length
+            ? '\n' + item.details.map(d => `      · ${d}`).join('\n')
+            : '';
+        return `  ${i + 1}. ${item.name} : ${fmt(item.amount)}${detailStr}`;
+    }).join('\n');
+
+    const totalFmt = fmt(quoteSnapshot.total);
+    const subtotalFmt = fmt(quoteSnapshot.subtotal);
+    const vatFmt = fmt(quoteSnapshot.vat);
+    const discountFmt = quoteSnapshot.discount > 0 ? fmt(quoteSnapshot.discount) : null;
+
+    const response = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            _subject: `[견적 요청] ${company} / ${project || '프로젝트명 미정'} / ${totalFmt}`,
+            회사: company,
+            담당자: contact,
+            연락처: phone || '—',
+            이메일: email || '—',
+            프로젝트: project || '—',
+            브랜드컨셉: brief || '(미입력)',
+            견적항목: itemList || '(없음)',
+            소계: subtotalFmt,
+            ...(discountFmt && { 할인: `- ${discountFmt}` }),
+            VAT: vatFmt,
+            총금액: totalFmt,
+            작성일시: new Date().toLocaleString('ko-KR')
+        })
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Formspree 오류 ${response.status}: ${errText}`);
+    }
+    return response.json();
+}
+
+// Excel 다운로드
+async function downloadExcel() {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('견적서');
+
+    // 컬럼 너비
+    ws.getColumn(1).width = 6;
+    ws.getColumn(2).width = 25;
+    ws.getColumn(3).width = 50;
+    ws.getColumn(4).width = 18;
+
+    // 제목
+    ws.mergeCells('A1:D1');
+    const titleCell = ws.getCell('A1');
+    titleCell.value = 'QUOTATION · 견적서';
+    titleCell.font = { name: 'Pretendard', size: 18, bold: true };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getRow(1).height = 32;
+
+    // 정보
+    let r = 3;
+    const info = [
+        ['공급자', '페르수스', '수신자', document.getElementById('company').value],
+        ['담당자', '배수현', '담당자', document.getElementById('contact').value + ' 님'],
+        ['연락처', '0507-1367-9820', '연락처', document.getElementById('phone').value],
+        ['이메일', 'persus24@naver.com', '이메일', document.getElementById('email').value],
+        ['작성일자', new Date().toLocaleDateString('ko-KR'), '프로젝트', document.getElementById('project').value]
+    ];
+    info.forEach(row => {
+        ws.getCell(`A${r}`).value = row[0];
+        ws.getCell(`B${r}`).value = row[1];
+        ws.getCell(`C${r}`).value = row[2];
+        ws.getCell(`D${r}`).value = row[3];
+        ws.getCell(`A${r}`).font = { bold: true, color: { argb: 'FF888888' } };
+        ws.getCell(`C${r}`).font = { bold: true, color: { argb: 'FF888888' } };
+        r++;
+    });
+
+    // 견적 헤더
+    r += 1;
+    const head = ws.getRow(r);
+    head.values = ['No.', '항목', '상세 내용', '금액'];
+    head.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    head.alignment = { horizontal: 'center', vertical: 'middle' };
+    head.eachCell(c => {
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A2A2A' } };
+    });
+    r++;
+
+    let subtotal = 0;
+    let no = 1;
+
+    // 메인
+    const mainName = document.getElementById('mainName').value || '메인';
+    const mainConfig = getMainConfig();
+    const mainBase = parseInt(document.getElementById('mainAmount').value) || 0;
+    const mainBoxVal = document.querySelector('input[name="m-box"]:checked')?.value || '';
+    const mainBoxSurcharge = (mainBoxVal === '싸바리 박스' || mainBoxVal === '상하박스') ? 100000 : 0;
+    const mainBoxDiscount = (mainBoxVal === 'none') ? 200000 : 0;
+    const mainContainerVal = document.querySelector('input[name="m-container"]:checked')?.value || '';
+    const mainContainerSurcharge = (mainContainerVal === '파우치') ? 100000 : 0;
+    const mainAmount = mainBase + mainBoxSurcharge + mainContainerSurcharge - mainBoxDiscount;
+    if (mainConfig.length > 0 && mainAmount > 0) {
+        const detail = [
+            ...mainConfig.map(({ type, label }) => type === 'container' ? (label === '파우치' ? `${mainName} ${label} 패키지` : `${mainName} ${label} 용기 패키지`) : `${mainName} ${label} 패키지`),
+            '브랜드 미션/가치/디자인 컨셉 정의',
+            '라인 확장을 고려한 디자인 시스템',
+            '후가공 사양(박, 형압 등) 및 디자인 적용 3D 목업 이미지'
+        ].join('\n');
+
+        const row = ws.getRow(r);
+        row.values = [no, '메인 패키지 디자인', detail, mainAmount];
+        row.getCell(4).numFmt = '"₩ "#,##0';
+        row.alignment = { vertical: 'top', wrapText: true };
+        row.height = 90;
+        subtotal += mainAmount;
+        no++; r++;
+    }
+
+    // 시리즈
+    if (state.series) {
+        const qty = parseInt(document.getElementById('seriesQty').value) || 0;
+        const unitBase = parseInt(document.getElementById('seriesUnit').value) || 0;
+        if (qty > 0 && unitBase > 0) {
+            for (let i = 0; i < qty; i++) {
+                const nameEl = document.getElementById(`sName-${i}`);
+                const name = nameEl && nameEl.value ? nameEl.value : `시리즈 ${i + 1}`;
+                const containerEl = document.querySelector(`input[name="si-c-${i}"]:checked`);
+                const boxEl = document.querySelector(`input[name="si-b-${i}"]:checked`);
+                const boxVal = boxEl?.value || '';
+                const boxSurcharge = (boxVal === '싸바리 박스' || boxVal === '상하박스') ? 100000 : 0;
+                const boxDiscount = (boxEl && boxVal === 'none') ? 100000 : 0;
+                const containerVal = containerEl?.value || '';
+                const containerSurcharge = (containerVal === '파우치') ? 100000 : 0;
+                const rowPrice = unitBase + boxSurcharge + containerSurcharge - boxDiscount;
+                const lines = [];
+                if (containerEl && containerEl.value && containerEl.value !== 'undefined') lines.push(`${name} ${containerEl.value}${containerEl.value === '파우치' ? '' : ' 용기'} 패키지`);
+                if (boxEl && boxEl.value && boxEl.value !== 'undefined' && boxEl.value !== 'none') lines.push(`${name} ${boxEl.value} 패키지`);
+                if (lines.length === 0) lines.push(`${name} 패키지`);
+                lines.push('인쇄 도안 레이아웃 최적화 / 후가공 사양 및 디자인 적용 3D 목업 이미지');
+                const row = ws.getRow(r);
+                row.values = [no, '베리에이션 패키지 디자인', lines.join('\n'), rowPrice];
+                row.getCell(4).numFmt = '"₩ "#,##0';
+                row.alignment = { vertical: 'top', wrapText: true };
+                row.height = lines.length * 18 + 5;
+                subtotal += rowPrice;
+                no++; r++;
+            }
+        }
+    }
+
+    // 용기 사양 컨설팅
+    if (state.tech) {
+        const techRow = ws.getRow(r);
+        techRow.values = [
+            no,
+            '용기 사양 컨설팅',
+            '[프로젝트 전 품목 통합 적용]\n용기 자체의 컬러 및 후가공 (박 / 증착 / 코팅 등) 제안\n용기 재질감과 컬러를 반영한 3D 이미지 제안\n용기 후가공 사양서 작성',
+            300000
+        ];
+        techRow.getCell(4).numFmt = '"₩ "#,##0';
+        techRow.alignment = { vertical: 'top', wrapText: true };
+        techRow.height = 75;
+        subtotal += 300000;
+        no++; r++;
+    }
+
+    // 스티커
+    if (state.labelQty > 0) {
+        const labelAmt = state.labelQty * 50000;
+        const labelRow = ws.getRow(r);
+        labelRow.values = [no, '개봉 방지/봉인 스티커', `버진 씰(Virgin Seal) / 개봉 방지용 스티커 디자인 × ${state.labelQty}종`, labelAmt];
+        labelRow.getCell(4).numFmt = '"₩ "#,##0';
+        labelRow.alignment = { vertical: 'top', wrapText: true };
+        subtotal += labelAmt;
+        no++; r++;
+    }
+
+    // 쇼핑백
+    if (state.bagQty > 0) {
+        const bagAmt = 200000 + (state.bagQty - 1) * 50000;
+        const bagRow = ws.getRow(r);
+        bagRow.values = [no, '쇼핑백 디자인', `구매 및 선물용 쇼핑백 디자인 × ${state.bagQty}종`, bagAmt];
+        bagRow.getCell(4).numFmt = '"₩ "#,##0';
+        bagRow.alignment = { vertical: 'top', wrapText: true };
+        subtotal += bagAmt;
+        no++; r++;
+    }
+
+    // 아웃박스
+    if (state.outboxQty > 0) {
+        const outboxAmt = 100000 + (state.outboxQty - 1) * 50000;
+        const outboxRow = ws.getRow(r);
+        outboxRow.values = [no, '아웃박스 디자인', `배송용 택배박스 외부 디자인 × ${state.outboxQty}종`, outboxAmt];
+        outboxRow.getCell(4).numFmt = '"₩ "#,##0';
+        outboxRow.alignment = { vertical: 'top', wrapText: true };
+        subtotal += outboxAmt;
+        no++; r++;
+    }
+
+
+
+    // 합계
+    r += 1;
+    const discountRate = parseInt(document.getElementById('discountRate').value) || 0;
+    const discount = Math.round(subtotal * discountRate / 100);
+    const afterDiscount = subtotal - discount;
+    const vat = Math.round(afterDiscount * 0.1);
+
+    ws.getCell(`C${r}`).value = '소계';
+    ws.getCell(`D${r}`).value = subtotal;
+    ws.getCell(`D${r}`).numFmt = '"₩ "#,##0';
+    r++;
+
+    if (discount > 0) {
+        ws.getCell(`C${r}`).value = `할인 (${discountRate}%)`;
+        ws.getCell(`D${r}`).value = -discount;
+        ws.getCell(`D${r}`).numFmt = '"₩ "#,##0';
+        r++;
+    }
+
+    ws.getCell(`C${r}`).value = 'VAT (10%)';
+    ws.getCell(`D${r}`).value = vat;
+    ws.getCell(`D${r}`).numFmt = '"₩ "#,##0';
+    r++;
+
+    ws.getCell(`C${r}`).value = '총액';
+    ws.getCell(`D${r}`).value = afterDiscount + vat;
+    ws.getCell(`D${r}`).numFmt = '"₩ "#,##0';
+    ws.getCell(`C${r}`).font = { bold: true, size: 13 };
+    ws.getCell(`D${r}`).font = { bold: true, size: 13 };
+
+    // 다운로드
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const company = document.getElementById('company').value || '페르수스';
+    const project = document.getElementById('project').value || '견적서';
+    const today = new Date();
+    const dateStr = `${String(today.getFullYear()).slice(2)}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+    a.href = url;
+    a.download = `${dateStr}_${company}_${project}_견적서_페르수스.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// 초기 로드
+init();
+
+// 2026 트렌드: 마우스 위치에 따른 앰비언트 광원 추적
+(function setupAmbientLight() {
+    let rafId = null;
+    let targetX = window.innerWidth * 0.3;
+    let targetY = window.innerHeight * 0.2;
+    let currentX = targetX;
+    let currentY = targetY;
+
+    function animate() {
+        currentX += (targetX - currentX) * 0.08;
+        currentY += (targetY - currentY) * 0.08;
+        document.body.style.setProperty('--mx', currentX + 'px');
+        document.body.style.setProperty('--my', currentY + 'px');
+        if (Math.abs(targetX - currentX) > 0.5 || Math.abs(targetY - currentY) > 0.5) {
+            rafId = requestAnimationFrame(animate);
+        } else {
+            rafId = null;
+        }
+    }
+
+    document.addEventListener('mousemove', (e) => {
+        targetX = e.clientX;
+        targetY = e.clientY;
+        if (!rafId) rafId = requestAnimationFrame(animate);
+    }, { passive: true });
+})();
+
+// 스크롤 진입 시 페이드업 애니메이션
+(function setupScrollReveal() {
+    if (!('IntersectionObserver' in window)) return;
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.section').forEach((el, idx) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(16px)';
+        el.style.transition = `opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1) ${idx * 0.03}s, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1) ${idx * 0.03}s`;
+        observer.observe(el);
+    });
+})();
+</script>
+</body>
+</html>
